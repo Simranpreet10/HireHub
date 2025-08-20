@@ -1,0 +1,134 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Change if using MySQL/SQLite
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id      Int      @id @default(autoincrement())
+  full_name    String
+  email        String   @unique
+  password     String
+  mobile_no    String?
+  work_status  String?
+  user_type    String
+  is_active    Boolean  @default(true)
+  date_joined  DateTime
+
+  profiles     UserProfile[]
+  applications Application[]
+  notifications Notification[]
+  resume_alts  ResumeAlt[]
+
+  Recruiter Recruiter[]
+}
+
+model UserProfile {
+  profile_id    Int     @id @default(autoincrement())
+  user_id       Int
+  skills        String?
+  marks_10      Float?
+  marks_12      Float?
+  marks_graduation Float?
+  location      String?
+  email         String?
+  resume        String?
+  additional_info String?
+
+  user User   @relation(fields: [user_id], references: [user_id])
+}
+
+model Recruiter {
+  recruiter_id Int     @id @default(autoincrement())
+  user_id      Int     @unique
+  full_name    String
+  email        String  @unique
+  password     String
+  company_id   Int
+  is_active    Boolean @default(true)
+  date_joined  DateTime
+
+  user       User      @relation(fields: [user_id], references: [user_id])
+  company    Company   @relation(fields: [company_id], references: [company_id])
+  jobs       Job[]
+}
+
+model Company {
+  company_id    Int     @id @default(autoincrement())
+  company_name  String
+  company_info  String?
+  company_logo  String?
+  location      String?
+  industry_type String?
+  website       String?
+
+  recruiters  Recruiter[]
+  jobs        Job[]
+}
+
+model Job {
+  job_id           Int      @id @default(autoincrement())
+  recruiter_id     Int
+  company_id       Int
+  job_title        String
+  description      String?
+  ctc              Float?
+  location         String?
+  posted_date      DateTime
+  closing_date     DateTime?
+  eligibility      String?
+  employment_type  String?
+  experience_required String?
+
+  recruiter   Recruiter @relation(fields: [recruiter_id], references: [recruiter_id])
+  company     Company   @relation(fields: [company_id], references: [company_id])
+  applications Application[]
+}
+
+model Application {
+  application_id Int      @id @default(autoincrement())
+  job_id         Int
+  user_id        Int
+  resume         String?
+  status         String
+  apply_date     DateTime
+  last_updated   DateTime
+
+  job   Job   @relation(fields: [job_id], references: [job_id])
+  user  User  @relation(fields: [user_id], references: [user_id])
+}
+
+model ResumeAlt {
+  resume_id      Int      @id @default(autoincrement())
+  user_id        Int
+  parsed_data    String?
+  ai_score       Float?
+  recommendations String?
+
+  user User @relation(fields: [user_id], references: [user_id])
+}
+
+model Notification {
+  notification_id Int      @id @default(autoincrement())
+  user_id         Int
+  message         String
+  notification_type String
+  created_at      DateTime
+  seen            Boolean  @default(false)
+
+  user User @relation(fields: [user_id], references: [user_id])
+}
+
+model Admin {
+  admin_id    Int      @id @default(autoincrement())
+  full_name   String
+  email       String   @unique
+  password    String
+  is_active   Boolean  @default(true)
+  date_joined DateTime
+}
