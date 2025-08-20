@@ -1,5 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+// const getdata=async (req, res) => {
+//     const company = await prisma.company.findMany()
+//     res.status(200).json({
+//         message: "Company profile retrieved successfully",
+//         data: company,
+//         });
+// }
 const updateCompanyProfile = async (req, res) => {
   const { company_id } = req.params;
   const { company_name, company_info, location, industry_type, website } = req.body;
@@ -22,4 +29,4 @@ const updateCompanyProfile = async (req, res) => {
 };
 
 
-module.exports = { updateCompanyProfile };
+module.exports = {updateCompanyProfile };
