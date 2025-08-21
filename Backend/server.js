@@ -10,13 +10,17 @@ const recruiterJobs = require('./routes/recruiterJob');
 const jobSearchRoutes = require('./routes/jobSearchRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 
-
+const adminAuthRoute = require('./routes/adminAuthRoutes');
 const applicationRoutes=require("./routes/application");
 
 const jobs = require('./routes/job');
 const updatecomapnyRoute = require('./routes/updatecomapnyRoute');
 const recruiterUpdate = require('./routes/recruiterupdate');
 const job_track= require('./routes/job_trackRoute');
+
+const adminUserRoutes = require("./routes/adminUserRoutes");
+const adminRecruiterRoutes = require("./routes/adminRecruiterRoutes");
+
 dotenv.config();
 
 const app = express();
@@ -34,10 +38,12 @@ app.use('/api/job',jobs);
 app.use('/api/jobsearch', jobSearchRoutes);
 app.use('/api/profile', profileRoutes);
 
-
+app.use('/api/admin/auth', adminAuthRoute);
 app.use('/api/updatecompany',updatecomapnyRoute);
 app.use('/api/recruiterupdate',recruiterUpdate);
 app.use('/api/job_track',job_track);
+app.use('/api/admin/', adminUserRoutes);
+app.use('/api/admin/', adminRecruiterRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server is running and DB connected!");
