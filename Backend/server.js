@@ -8,6 +8,8 @@ const resetPassword = require('./routes/resetPassword');
 const recruiterJobs = require('./routes/recruiterJob');
 const applicationRoutes=require("./routes/application");
 const jobs = require('./routes/job');
+const updatecomapnyRoute = require('./routes/updatecomapnyRoute');
+const recruiterUpdate = require('./routes/recruiterupdate');
 dotenv.config();
 
 const app = express();
@@ -21,7 +23,8 @@ app.use('/api/reset-password',resetPassword);
 app.use('/api/getRecuiterJobs',recruiterJobs);
 app.use("/api/applications", applicationRoutes);
 app.use('/api/job',jobs);
-
+app.use('/api/updatecompany',updatecomapnyRoute);
+app.use('/api/recruiterupdate',recruiterUpdate);
 app.get("/", (req, res) => {
   res.send("Server is running and DB connected!");
 });
