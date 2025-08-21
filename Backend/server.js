@@ -6,6 +6,9 @@ const recruiterAuth = require("./routes/recruiterAuth");
 const jobRoutes = require('./routes/viewJob');
 const resetPassword = require('./routes/resetPassword');
 const recruiterJobs = require('./routes/recruiterJob');
+const jobSearchRoutes = require('./routes/jobSearchRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+
 const jobs = require('./routes/job');
 dotenv.config();
 
@@ -19,6 +22,8 @@ app.use('/api/viewjob', jobRoutes);
 app.use('/api/reset-password',resetPassword);
 app.use('/api/getRecuiterJobs',recruiterJobs);
 app.use('/api/job',jobs);
+app.use('/api/jobsearch', jobSearchRoutes);
+app.use('/api/profile', profileRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server is running and DB connected!");
