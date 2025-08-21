@@ -10,6 +10,7 @@ const applicationRoutes=require("./routes/application");
 const jobs = require('./routes/job');
 const updatecomapnyRoute = require('./routes/updatecomapnyRoute');
 const recruiterUpdate = require('./routes/recruiterupdate');
+const job_track= require('./routes/job_trackRoute');
 dotenv.config();
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/applications", applicationRoutes);
 app.use('/api/job',jobs);
 app.use('/api/updatecompany',updatecomapnyRoute);
 app.use('/api/recruiterupdate',recruiterUpdate);
+app.use('/api/job_track',job_track);
 app.get("/", (req, res) => {
   res.send("Server is running and DB connected!");
 });
