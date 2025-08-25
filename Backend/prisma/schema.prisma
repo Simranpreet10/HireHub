@@ -20,7 +20,7 @@ model User {
   is_active    Boolean  @default(true)
   date_joined  DateTime
 
-  profiles     UserProfile[]
+  profiles     UserProfile[] 
   applications Application[]
   notifications Notification[]
   resume_alts  ResumeAlt[]

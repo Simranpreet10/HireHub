@@ -20,7 +20,7 @@ const job_track= require('./routes/job_trackRoute');
 
 const adminUserRoutes = require("./routes/adminUserRoutes");
 const adminRecruiterRoutes = require("./routes/adminRecruiterRoutes");
-
+const adminapproval = require("./routes/adminApprovalRoute");
 dotenv.config();
 
 const app = express();
@@ -44,7 +44,7 @@ app.use('/api/recruiterupdate',recruiterUpdate);
 app.use('/api/job_track',job_track);
 app.use('/api/admin/', adminUserRoutes);
 app.use('/api/admin/', adminRecruiterRoutes);
-
+app.use('/api/admin/approval',adminapproval);
 app.get("/", (req, res) => {
   res.send("Server is running and DB connected!");
 });
