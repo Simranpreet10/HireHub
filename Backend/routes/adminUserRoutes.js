@@ -5,5 +5,6 @@ const adminUserController = require("../controllers/adminUserController"); // âœ
 
 router.get("/users", adminAuth, adminUserController.viewAllUsers);
 router.get("/user-profiles", adminAuth, adminUserController.viewAllProfiles);
+router.get("/user/:user_id", adminAuth, adminUserController.getUserFullProfile);
 
 module.exports = router;

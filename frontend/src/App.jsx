@@ -1,13 +1,103 @@
-import React from 'react'
+// src/App.jsx
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
 
-function App() {
-  return (
-    <div className="flex h-screen items-center justify-center bg-gray-900">
-      <h1 className="text-5xl font-bold text-blue-500">
-        🚀 Tailwind is Working!
-      </h1>
-    </div>
-  )
+// UI Components
+import Navbar from "./components/ui/Navbar";
+import Footer from "./components/ui/Footer";
+
+// General Pages
+import Home from "./pages/Home";
+
+// Auth Pages
+import Login from "./pages/Auth/Login";
+import Signup from "./pages/Auth/Signup";
+
+// Job Pages
+import JobsList from "./pages/Jobs/JobsList";
+import JobDetail from "./pages/Jobs/JobDetail";
+
+// Admin Pages
+import AdminLogin from "./pages/Admin/AdminLogin";
+import AdminLayout from "./pages/Admin/AdminLayout";
+import AdminDashboard from "./pages/Admin/Dashboard";
+import AdminUsers from "./pages/Admin/Users";
+import AdminJobs from "./pages/Admin/Jobs";
+import Recruiter from "./pages/Admin/Recruiter";
+
+/** Optional: simple admin auth guard (JWT in localStorage named 'adminToken') */
+function RequireAdmin({ children }) {
+  const token = localStorage.getItem("adminToken");
+  if (!token) return <Navigate to="/admin/login" replace />;
+  return children;
 }
 
-export default App
+function AppContent() {
+  const location = useLocation();
+  // hide navbar/footer for admin routes
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
+      {!isAdminRoute && <Navbar />}
+
+      <main className="flex-grow container mx-auto px-4 py-6">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Jobs */}
+          <Route path="/jobs" element={<JobsList />} />
+          <Route path="/jobs/:id" element={<JobDetail />} />
+
+          {/* Admin login (kept outside layout) */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* Nested admin routes (use relative child paths) */}
+          <Route
+            path="/admin/*"
+            element={
+              <RequireAdmin>
+                <AdminLayout />
+              </RequireAdmin>
+            }
+          >
+            {/* NOTE: child paths are relative (no leading slash) */}
+            <Route index element={<AdminDashboard />} />       {/* /admin */}
+            <Route path="dashboard" element={<AdminDashboard />} /> {/* /admin/dashboard */}
+            <Route path="users" element={<AdminUsers />} />           {/* /admin/users */}
+            <Route path="jobs" element={<AdminJobs />} />             {/* /admin/jobs */}
+            <Route path="recruiter" element={<Recruiter />} />        {/* /admin/recruiter */}
+            {/* add more nested admin routes here */}
+          </Route>
+
+          {/* 404 */}
+          <Route
+            path="*"
+            element={
+              <h2 className="text-center text-2xl mt-10">404 - Page Not Found</h2>
+            }
+          />
+        </Routes>
+      </main>
+
+      {!isAdminRoute && <Footer />}
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
