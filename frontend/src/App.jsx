@@ -19,6 +19,12 @@ import Home from "./pages/Home";
 import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
 
+// User Pages
+import UserDashboard from "./pages/User/UserDashboard";
+import ProfileSetup from "./pages/User/ProfileSetup";
+import MyApplications from "./pages/User/MyApplications";
+import JobSearch from "./pages/User/JobSearch";
+
 // Job Pages
 import JobsList from "./pages/Jobs/JobsList";
 import JobDetail from "./pages/Jobs/JobDetail";
@@ -54,8 +60,14 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
+          {/* User Dashboard */}
+          <Route path="/user-dashboard" element={<UserDashboard />} />
+          <Route path="/profile/setup" element={<ProfileSetup />} />
+          <Route path="/applications" element={<MyApplications />} />
+          <Route path="/job-search" element={<JobSearch />} />
+
           {/* Jobs */}
-          <Route path="/jobs" element={<JobsList />} />
+          <Route path="/jobs" element={<JobSearch />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
 
           {/* Admin login (kept outside layout) */}

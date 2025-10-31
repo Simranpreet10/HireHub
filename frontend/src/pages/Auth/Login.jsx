@@ -25,6 +25,14 @@ export default function Login() {
       localStorage.setItem("token", token);
       API.setAuthToken(token);
 
+      // Decode token to get user data
+      try {
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        localStorage.setItem("userData", JSON.stringify(tokenPayload));
+      } catch (decodeErr) {
+        console.warn("Failed to decode token:", decodeErr);
+      }
+
       // if you have an auth context with login() method, call it
       try {
         if (auth && typeof auth.login === "function") {
@@ -34,9 +42,11 @@ export default function Login() {
         console.warn("auth context login failed:", ctxErr);
       }
 
-      alert("Logged in!");
-      // redirect to homepage or dashboard depending on user type
-      nav("/");
+      // Trigger navbar update by dispatching a custom event
+      window.dispatchEvent(new Event('authChange'));
+
+      // redirect to user dashboard
+      nav("/user-dashboard");
     } catch (err) {
       console.error("login error:", err);
       setError(err.response?.data?.message || err.message || "Login failed");
