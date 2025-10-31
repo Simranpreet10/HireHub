@@ -31,8 +31,23 @@ const signup = async (req, res) => {
     otp,
     expiresAt,
   });
-  await sendOtpEmail(email, otp);
-  res.status(200).json({ message: "OTP sent to email" });
+  
+  console.log(`Generated OTP for ${email}: ${otp}`);
+  
+  try {
+    const emailResult = await sendOtpEmail(email, otp);
+    console.log('Email sending result:', emailResult);
+    
+    if (emailResult && !emailResult.success) {
+      console.error('Failed to send email:', emailResult.message);
+      return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+    }
+    
+    res.status(200).json({ message: "OTP sent to email" });
+  } catch (err) {
+    console.error('Error in sendOtpEmail:', err);
+    return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+  }
 };
 
 const signupVerify = async (req, res) => {

@@ -72,13 +72,19 @@ async function getUserApplications(req, res){
             },
             include:{
                 job:{
-                    select:{
-                        job_title: true,
-                        company_id: true,
-                        posted_date: true,
-                        closing_date: true,
+                    include:{
+                        company: {
+                            select:{
+                                company_name: true,
+                                company_logo: true,
+                                location: true
+                            }
+                        }
                     }
                 }
+            },
+            orderBy: {
+                apply_date: 'desc'
             }
         });
         res.json(applications);

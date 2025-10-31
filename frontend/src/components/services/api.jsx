@@ -19,10 +19,10 @@ instance.interceptors.response.use(
 
 export default {
   raw: instance,
-  signup: (payload) => instance.post("/auth/signup", payload),
-  signupVerify: (payload) => instance.post("/auth/signup-verify", payload),
+  signup: (payload) => instance.post("/api/userauth/signup", payload),
+  signupVerify: (payload) => instance.post("/api/userauth/signup/verify", payload),
   login: async (email, password) => {
-    const res = await instance.post("/auth/login", { email, password });
+    const res = await instance.post("/api/userauth/login", { email, password });
     return res.data;
   },
   setAuthToken: (token) => {
