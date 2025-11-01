@@ -1,10 +1,6 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-
-
-
 const toggleRecruiterStatus = async (req, res) => {
     const { recruiter_id } = req.params;
     const { is_active } = req.body;
@@ -17,8 +13,6 @@ const toggleRecruiterStatus = async (req, res) => {
     res.json({ message: "Recruiter status updated", recruiter });
 
 };
-
-
 
 const deleteRecruiter = async (req, res) => {
      const { recruiter_id } = req.params;
@@ -50,56 +44,8 @@ const deleteRecruiter = async (req, res) => {
 };
 
 
-const toggleUserStatus = async (req, res) => {
-    const { user_id } = req.params;
-    const { is_active } = req.body;
-
-    const user = await prisma.user.update({
-      where: { user_id: parseInt(user_id) },
-      data: { is_active }
-    });
-
-    res.json({ message: "User status updated", user });
-
-};
-
-
-const editUser = async (req, res) => {
-    const { user_id } = req.params;
-    const { full_name, email, password, mobile_no, work_status ,user_type } = req.body;
-
-    const user = await prisma.user.update({
-      where: { user_id: parseInt(user_id) },
-      data: { full_name, email, password, mobile_no, work_status ,user_type}
-    });
-
-    res.json({ message: "User updated", user });
-  
-};
-
-
-const deleteUser = async (req, res) => {
- 
-   const { user_id } = req.params;
-    const id = parseInt(user_id);
-   await prisma.userProfile.deleteMany({ where: { user_id: id } });
-    await prisma.application.deleteMany({ where: { user_id: id } });
-    await prisma.notification.deleteMany({ where: { user_id: id } });
-    await prisma.resumeAlt.deleteMany({ where: { user_id: id } });
-    await prisma.recruiter.deleteMany({ where: { user_id: id } });
-
-    await prisma.user.delete({
-      where: { user_id: id}
-    });
-
-    res.json({ message: "User deleted" });
-  
-};
 
 module.exports = {
   toggleRecruiterStatus,
   deleteRecruiter,
-  toggleUserStatus,
-  editUser,
-  deleteUser
 };
