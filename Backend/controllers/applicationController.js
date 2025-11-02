@@ -255,6 +255,10 @@ const getAllApplications = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 404f231937fe0261dade9b6dcc89cf768cd13221
 async function withdrawApplication(req, res) {
     try {
         const { applicationId } = req.params;
@@ -313,6 +317,7 @@ async function withdrawApplication(req, res) {
     }
 }
 
+<<<<<<< HEAD
 module.exports = {
   applyForJob,
   getUserApplications,
@@ -320,4 +325,8 @@ module.exports = {
   getAllApplications,
   withdrawApplication
 };
+=======
+module.exports={applyForJob, getUserApplications, updateApplicationStatus, withdrawApplication, getAllApplications};
+
+>>>>>>> 404f231937fe0261dade9b6dcc89cf768cd13221
 

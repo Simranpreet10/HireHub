@@ -4,7 +4,8 @@ const {applyForJob}=require("../controllers/applicationController");
 const {getUserApplications}=require("../controllers/applicationController");
 const {updateApplicationStatus}=require("../controllers/applicationController");
 
-const {getAllApplications}=require("../controllers/applicationController");
+const { getAllApplications } = require("../controllers/applicationController");
+
 
 const {withdrawApplication}=require("../controllers/applicationController");
 
