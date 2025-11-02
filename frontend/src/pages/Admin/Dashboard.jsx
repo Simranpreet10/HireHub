@@ -1,46 +1,4 @@
-// // src/pages/Dashboard.jsx
-// import { useNavigate } from "react-router-dom";
-// import { useEffect } from "react";
 
-// export default function Dashboard() {
-//   const nav = useNavigate();
-
-//   useEffect(() => {
-//     const token = localStorage.getItem("adminToken");
-//     if (!token) {
-//       nav("/admin-login");
-//     }
-//   }, [nav]);
-
-//   const handleLogout = () => {
-//     localStorage.removeItem("adminToken");
-//     alert("Logged out successfully!");
-//     nav("/admin/login");
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-4">
-//       <div className="flex justify-between items-center bg-white p-4 rounded shadow">
-//         <h2 className="text-xl font-semibold">Admin Dashboard</h2>
-//         <button
-//           onClick={handleLogout}
-//           className="bg-red-600 text-white px-3 py-1 rounded"
-//         >
-//           Logout
-//         </button>
-//       </div>
-
-//       {/* Your dashboard content here */}
-//       <div className="mt-6 text-center text-gray-700">
-//         Welcome, Admin! Manage users, recruiters, and jobs here.
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-// src/pages/admin/Dashboard.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import adminApi from "../../components/services/AdminApi";

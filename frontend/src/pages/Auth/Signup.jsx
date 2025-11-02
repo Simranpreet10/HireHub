@@ -1,10 +1,9 @@
-// src/pages/Auth/Signup.jsx
 import { useState } from "react";
 import API from "../../components/services/api";
 import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
-  const [step, setStep] = useState(1); // 1: Signup -> send OTP, 2: Verify OTP
+  const [step, setStep] = useState(1); // 1 = Signup, 2 = OTP Verify
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
@@ -12,39 +11,45 @@ export default function Signup() {
     password: "",
     mobile_no: "",
     work_status: "",
-    // match your schema — allow selecting 'user' or 'recruiter'
-    user_type: "user",
+    user_type: "user", // user or recruiter
+    company_name: "",
+    designation: "",
   });
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState(null);
   const nav = useNavigate();
 
+  // ---------------- HANDLE SIGNUP ----------------
   const handleSignup = async (e) => {
     e.preventDefault();
     setMessage(null);
     setLoading(true);
+
     try {
-      // send signup (this will generate OTP and email it)
+      // Send signup details (backend sends OTP)
       const res = await API.signup(form);
-      setMessage(res.data?.message || "OTP sent to email");
+      setMessage(res.data?.message || "OTP sent to your email");
       setStep(2);
     } catch (err) {
-      console.error("signup error:", err);
+      console.error("Signup error:", err);
       setMessage(err.response?.data?.message || err.message || "Signup failed");
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------------- HANDLE OTP VERIFY ----------------
   const handleVerify = async (e) => {
     e.preventDefault();
     setMessage(null);
     setLoading(true);
+
     try {
       await API.signupVerify({ email: form.email, otp });
-      setMessage("Account created. Please login.");
-      // reset form and go to login after short delay
+      setMessage("Account created successfully! Redirecting to login...");
+
       setTimeout(() => {
+        // reset all fields
         setStep(1);
         setForm({
           full_name: "",
@@ -53,26 +58,35 @@ export default function Signup() {
           mobile_no: "",
           work_status: "",
           user_type: "user",
+          company_name: "",
+          designation: "",
         });
         setOtp("");
         nav("/login");
-      }, 900);
+      }, 1000);
     } catch (err) {
-      console.error("verify error:", err);
+      console.error("OTP verify error:", err);
       setMessage(err.response?.data?.message || err.message || "OTP verification failed");
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------------- RENDER UI ----------------
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       {step === 1 ? (
-        <form onSubmit={handleSignup} className="bg-white p-6 shadow-md rounded w-full max-w-md">
+        <form
+          onSubmit={handleSignup}
+          className="bg-white p-6 shadow-md rounded w-full max-w-md"
+        >
           <h2 className="text-xl font-semibold mb-4 text-center">Signup</h2>
 
-          {message && <div className="mb-3 text-sm text-red-600">{message}</div>}
+          {message && (
+            <div className="mb-3 text-sm text-red-600 text-center">{message}</div>
+          )}
 
+          {/* Full Name */}
           <input
             type="text"
             placeholder="Full Name *"
@@ -82,6 +96,7 @@ export default function Signup() {
             required
           />
 
+          {/* Email */}
           <input
             type="email"
             placeholder="Email *"
@@ -91,6 +106,7 @@ export default function Signup() {
             required
           />
 
+          {/* Password */}
           <input
             type="password"
             placeholder="Password *"
@@ -100,6 +116,7 @@ export default function Signup() {
             required
           />
 
+          {/* Mobile No */}
           <input
             type="text"
             placeholder="Mobile No"
@@ -108,6 +125,7 @@ export default function Signup() {
             onChange={(e) => setForm({ ...form, mobile_no: e.target.value })}
           />
 
+          {/* Work Status */}
           <input
             type="text"
             placeholder="Work Status (e.g. Student / Employed)"
@@ -116,6 +134,7 @@ export default function Signup() {
             onChange={(e) => setForm({ ...form, work_status: e.target.value })}
           />
 
+          {/* Account Type */}
           <div className="mb-4">
             <label className="text-sm mr-3">Account Type:</label>
             <select
@@ -128,10 +147,33 @@ export default function Signup() {
             </select>
           </div>
 
+          {/* Recruiter-specific fields */}
+          {form.user_type === "recruiter" && (
+            <>
+              <input
+                type="text"
+                placeholder="Company Name *"
+                className="border p-2 w-full mb-2"
+                value={form.company_name}
+                onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="Designation *"
+                className="border p-2 w-full mb-2"
+                value={form.designation}
+                onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                required
+              />
+            </>
+          )}
+
           <button
             type="submit"
             disabled={loading}
-            className="bg-green-500 text-white py-2 px-4 rounded w-full"
+            className="bg-green-600 text-white py-2 px-4 rounded w-full"
           >
             {loading ? "Sending OTP..." : "Send OTP"}
           </button>
@@ -147,12 +189,19 @@ export default function Signup() {
           </div>
         </form>
       ) : (
-        <form onSubmit={handleVerify} className="bg-white p-6 shadow-md rounded w-full max-w-md">
+        <form
+          onSubmit={handleVerify}
+          className="bg-white p-6 shadow-md rounded w-full max-w-md"
+        >
           <h2 className="text-xl font-semibold mb-4 text-center">Verify OTP</h2>
 
-          {message && <div className="mb-3 text-sm text-red-600">{message}</div>}
+          {message && (
+            <div className="mb-3 text-sm text-red-600 text-center">{message}</div>
+          )}
 
-          <p className="text-sm text-gray-500 mb-2 text-center">OTP sent to {form.email}</p>
+          <p className="text-sm text-gray-500 mb-3 text-center">
+            OTP sent to {form.email}
+          </p>
 
           <input
             type="text"
@@ -166,7 +215,7 @@ export default function Signup() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-500 text-white py-2 px-4 rounded w-full"
+            className="bg-blue-600 text-white py-2 px-4 rounded w-full"
           >
             {loading ? "Verifying..." : "Verify & Create Account"}
           </button>

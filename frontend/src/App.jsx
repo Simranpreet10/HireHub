@@ -36,6 +36,16 @@ import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminUsers from "./pages/Admin/Users";
 import AdminJobs from "./pages/Admin/Jobs";
 import Recruiter from "./pages/Admin/Recruiter";
+import UserProfile from "./pages/Admin/UserProfile";
+
+//Recruiter Pages
+import RecruiterDashboard from "./pages/Recruiter/Dashboard";
+import JobManager from "./pages/Recruiter/JobManager";
+import JobForm from "./pages/Recruiter/JobForm";
+import RecruiterProfile from "./pages/Recruiter/RecruiterProfile";
+import CompanyProfile from "./pages/Recruiter/CompanyProfile";
+import ApplicantsView from "./pages/Recruiter/ApplicantsManager";
+// import JobsWithApplicants from "./pages/Recruiter/JobsWithApplicants";
 
 /** Optional: simple admin auth guard (JWT in localStorage named 'adminToken') */
 function RequireAdmin({ children }) {
@@ -70,6 +80,15 @@ function AppContent() {
           <Route path="/jobs" element={<JobSearch />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
 
+          {/* Recruiter Dashboard */}
+          <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
+          <Route path="/recruiter/jobs" element={<JobManager />} />
+          <Route path="/recruiter/jobs/new" element={<JobForm />} />
+          <Route path="/recruiter/profile" element={<RecruiterProfile />} />
+          <Route path="/recruiter/company" element={<CompanyProfile />} />
+          <Route path="/recruiter/applicants" element={<ApplicantsView />} />
+          {/* <Route path="/recruiter/jobs-with-applicants" element={<JobsWithApplicants />} /> */}
+
           {/* Admin login (kept outside layout) */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
@@ -82,20 +101,22 @@ function AppContent() {
               </RequireAdmin>
             }
           >
-            {/* NOTE: child paths are relative (no leading slash) */}
-            <Route index element={<AdminDashboard />} />       {/* /admin */}
-            <Route path="dashboard" element={<AdminDashboard />} /> {/* /admin/dashboard */}
-            <Route path="users" element={<AdminUsers />} />           {/* /admin/users */}
-            <Route path="jobs" element={<AdminJobs />} />             {/* /admin/jobs */}
-            <Route path="recruiter" element={<Recruiter />} />        {/* /admin/recruiter */}
-            {/* add more nested admin routes here */}
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            
+            <Route path="users/:userId/profile" element={<UserProfile />} />
+            <Route path="jobs" element={<AdminJobs />} />
+            <Route path="recruiter" element={<Recruiter />} />
           </Route>
 
           {/* 404 */}
           <Route
             path="*"
             element={
-              <h2 className="text-center text-2xl mt-10">404 - Page Not Found</h2>
+              <h2 className="text-center text-2xl mt-10">
+                404 - Page Not Found
+              </h2>
             }
           />
         </Routes>

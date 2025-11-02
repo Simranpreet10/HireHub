@@ -57,6 +57,8 @@ export function AuthProvider({ children }) {
   );
 }
 
+
+
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (ctx === null) {
@@ -66,3 +68,6 @@ export function useAuth() {
 }
 
 export default AuthContext;
+
+
+

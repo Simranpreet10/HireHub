@@ -1,29 +1,45 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import api  from '../services/api';
 
-export default function JobCard({ job, onApply }) {
-  const nav = useNavigate();
+ export const JobCard = ({ job, onUpdate }) => {
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this job?')) {
+      try {
+        await api.delete(`/recruiter/jobs/${job.id}`);
+        onUpdate();
+      } catch (error) {
+        // Handle error
+        console.error('Error deleting job:', error);
+      }
+    }
+  };
 
   return (
-    <div className="border rounded-lg p-4 shadow hover:shadow-lg transition">
-      <h3 className="text-lg font-semibold">{job.job_title}</h3>
-      <p className="text-gray-600">{job.company?.company_name || "Company"}</p>
-      <p className="text-gray-500">{job.location || "Remote"}</p>
-
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => nav(`/job/${job._id || job.job_id}`)}
-          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h3 className="font-bold text-lg mb-2">{job.title}</h3>
+      <p className="text-gray-600 mb-4">{job.description}</p>
+      
+      <div className="flex items-center text-sm text-gray-500 mb-4">
+        <span className="mr-4">{job.location}</span>
+        <span>{job.type}</span>
+      </div>
+      
+      <div className="flex justify-between">
+        <button 
+          className="text-blue-600"
+          onClick={() => {/* Handle edit */}}
         >
-          View Details
+          Edit
         </button>
-        <button
-          onClick={() => onApply(job._id || job.job_id)}
-          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+        <button 
+          className="text-red-600"
+          onClick={handleDelete}
         >
-          Apply
+          Delete
         </button>
       </div>
     </div>
   );
-}
+};
+
+export default JobCard;

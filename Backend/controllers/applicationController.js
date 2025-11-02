@@ -62,37 +62,43 @@ async function applyForJob(req, res){
     }
 }
 
-async function getUserApplications(req, res){
-    try{
-        const userId=req.params.userId; //getting value from route
+const getUserApplications = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId); // ✅ convert to integer
 
-        const applications=await prisma.application.findMany({
-            where:{
-                user_id: parseInt(userId)
-            },
-            include:{
-                job:{
-                    include:{
-                        company: {
-                            select:{
-                                company_name: true,
-                                company_logo: true,
-                                location: true
-                            }
-                        }
-                    }
-                }
-            },
-            orderBy: {
-                apply_date: 'desc'
-            }
-        });
-        res.json(applications);
-    }catch(err){
-        console.log("Error fetching applications: ", err);
-        res.status(500).json({error: "Server Error"});
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "Invalid userId" });
     }
-}
+
+    const applications = await prisma.application.findMany({
+      where: {
+        user_id: userId, // ✅ correct numeric comparison
+      },
+      include: {
+        job: {
+          include: {
+            company: {
+              select: {
+                company_name: true,
+                company_logo: true,
+                location: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        apply_date: "desc",
+      },
+    });
+
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 async function updateApplicationStatus(req, res){
     try{
