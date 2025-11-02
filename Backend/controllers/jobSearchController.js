@@ -23,7 +23,7 @@ exports.searchJobs = async (req, res) => {
     const filters = {
       ...(job_title && { job_title: { contains: job_title, mode: "insensitive" } }),
       ...(location && { location: { contains: location, mode: "insensitive" } }),
-      ...(employment_type && { employment_type: { contains: employment_type, mode: "insensitive" } }),
+      ...(employment_type && { employment_type: { equals: employment_type, mode: "insensitive" } }),
       ...(company_name && { company: { company_name: { contains: company_name, mode: "insensitive" } } }),
     };
 

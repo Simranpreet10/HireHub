@@ -1,32 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import recruiterApi from '../../components/services/recruiterApi';
+import recruiterApi from '../../components/services/RecruiterApi';
 
 const CompanyProfile = () => {
   const [company, setCompany] = useState({
-    name: '',
-    industry: '',
-    size: '',
+    company_name: '',
+    industry_type: '',
     website: '',
     location: '',
-    description: '',
-    founded: '',
-    logo: null
+    company_info: '',
+    company_logo: null
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState('');
+  const [companyId, setCompanyId] = useState(null);
 
   useEffect(() => {
-    fetchCompany();
+    // Get company_id from recruiterData
+    const recruiterDataStr = localStorage.getItem('recruiterData');
+    if (recruiterDataStr) {
+      try {
+        const recruiterData = JSON.parse(recruiterDataStr);
+        if (recruiterData.company_id) {
+          setCompanyId(recruiterData.company_id);
+          fetchCompany(recruiterData.company_id);
+        } else {
+          setError('Company ID not found. Please login again.');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error parsing recruiter data:', err);
+        setError('Error loading recruiter information');
+        setLoading(false);
+      }
+    } else {
+      setError('Please login as recruiter');
+      setLoading(false);
+    }
   }, []);
 
-  const fetchCompany = async () => {
+  const fetchCompany = async (id) => {
     try {
       setLoading(true);
-      const response = await recruiterApi.getCompany();
-      setCompany(response.data);
+      setError(null);
+      const response = await recruiterApi.getCompany(id);
+      if (response.data) {
+        setCompany({
+          company_name: response.data.company_name || '',
+          industry_type: response.data.industry_type || '',
+          website: response.data.website || '',
+          location: response.data.location || '',
+          company_info: response.data.company_info || '',
+          company_logo: response.data.company_logo || null
+        });
+      }
     } catch (err) {
-      setError('Failed to load company profile',err);
+      console.error('Error fetching company:', err);
+      setError(err.response?.data?.message || 'Failed to load company profile');
     } finally {
       setLoading(false);
     }
@@ -34,8 +64,8 @@ const CompanyProfile = () => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === 'logo' && files[0]) {
-      setCompany(prev => ({ ...prev, logo: files[0] }));
+    if (name === 'company_logo' && files[0]) {
+      setCompany(prev => ({ ...prev, company_logo: files[0] }));
     } else {
       setCompany(prev => ({ ...prev, [name]: value }));
     }
@@ -43,18 +73,51 @@ const CompanyProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!companyId) {
+      setError('Company ID missing. Please login again.');
+      return;
+    }
+    
+    // Simple URL validation - accept common formats
+    if (company.website && company.website.trim()) {
+      const url = company.website.trim();
+      // Allow www.example.com, example.com, https://example.com, http://example.com
+      const urlPattern = /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
+      if (!urlPattern.test(url)) {
+        setError('Please enter a valid website URL (e.g., www.example.com or example.com)');
+        return;
+      }
+    }
+    
     try {
       setLoading(true);
-      const formData = new FormData();
-      Object.entries(company).forEach(([key, value]) => {
-        if (value !== null) formData.append(key, value);
-      });
+      setError(null);
       
-      await recruiterApi.updateCompany(formData);
-      setSuccess('Company profile updated successfully');
+      // Backend expects JSON with these fields
+      const payload = {
+        company_name: company.company_name,
+        industry_type: company.industry_type,
+        website: company.website,
+        location: company.location,
+        company_info: company.company_info
+      };
+      
+      const response = await recruiterApi.updateCompany(companyId, payload);
+      setSuccess('Company profile updated successfully!');
+      
+      // Refresh data if returned
+      if (response.data?.data) {
+        setCompany(prev => ({
+          ...prev,
+          ...response.data.data
+        }));
+      }
+      
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Failed to update company profile',err);
+      console.error('Error updating company:', err);
+      setError(err.response?.data?.message || 'Failed to update company profile');
     } finally {
       setLoading(false);
     }
@@ -76,102 +139,72 @@ const CompanyProfile = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block mb-1">Company Name</label>
+          <label className="block mb-1 font-medium">Company Name *</label>
           <input
             type="text"
-            name="name"
-            value={company.name}
+            name="company_name"
+            value={company.company_name}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
 
         <div>
-          <label className="block mb-1">Industry</label>
+          <label className="block mb-1 font-medium">Industry Type</label>
           <input
             type="text"
-            name="industry"
-            value={company.industry}
+            name="industry_type"
+            value={company.industry_type}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="e.g., IT Services, Healthcare, Finance"
           />
         </div>
 
         <div>
-          <label className="block mb-1">Company Size</label>
-          <select
-            name="size"
-            value={company.size}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select size</option>
-            <option value="1-10">1-10 employees</option>
-            <option value="11-50">11-50 employees</option>
-            <option value="51-200">51-200 employees</option>
-            <option value="201-500">201-500 employees</option>
-            <option value="501+">501+ employees</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-1">Website</label>
+          <label className="block mb-1 font-medium">Website</label>
           <input
-            type="url"
+            type="text"
             name="website"
             value={company.website}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="e.g., www.amazon.in or https://amazon.com"
           />
+          <p className="text-xs text-gray-500 mt-1">Enter your company website (e.g., www.example.com)</p>
         </div>
 
         <div>
-          <label className="block mb-1">Location</label>
+          <label className="block mb-1 font-medium">Location</label>
           <input
             type="text"
             name="location"
             value={company.location}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="e.g., New York, USA or MNC"
           />
         </div>
 
         <div>
-          <label className="block mb-1">Founded Year</label>
-          <input
-            type="number"
-            name="founded"
-            value={company.founded}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            min="1800"
-            max={new Date().getFullYear()}
-          />
-        </div>
-
-        <div>
-          <label className="block mb-1">Company Logo</label>
-          <input
-            type="file"
-            name="logo"
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            accept="image/*"
-          />
-        </div>
-
-        <div>
-          <label className="block mb-1">Description</label>
+          <label className="block mb-1 font-medium">Company Description</label>
           <textarea
-            name="description"
-            value={company.description}
+            name="company_info"
+            value={company.company_info}
             onChange={handleChange}
             rows="4"
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Describe your company..."
           />
         </div>
+
+        {company.company_logo && typeof company.company_logo === 'string' && (
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">Current Logo</label>
+            <p className="text-sm text-gray-600">{company.company_logo}</p>
+          </div>
+        )}
 
         <button
           type="submit"

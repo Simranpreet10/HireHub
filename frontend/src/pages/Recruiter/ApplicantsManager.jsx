@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import recruiterApi from '../../components/services/recruiterApi';
+import recruiterApi from '../../components/services/RecruiterApi';
 
 const ApplicantsManager = () => {
   const [jobs, setJobs] = useState([]);
@@ -7,9 +7,30 @@ const ApplicantsManager = () => {
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recruiterId, setRecruiterId] = useState(null);
 
   useEffect(() => {
-    fetchJobs();
+    // Get recruiter_id from localStorage
+    const recruiterData = localStorage.getItem('recruiterData');
+    if (recruiterData) {
+      try {
+        const data = JSON.parse(recruiterData);
+        if (data.recruiter_id) {
+          setRecruiterId(data.recruiter_id);
+          fetchJobs(data.recruiter_id);
+        } else {
+          setError('Recruiter ID not found. Please login again.');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error parsing recruiter data:', err);
+        setError('Error loading recruiter information');
+        setLoading(false);
+      }
+    } else {
+      setError('Please login as recruiter');
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -18,13 +39,15 @@ const ApplicantsManager = () => {
     }
   }, [selectedJob]);
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (recId) => {
     try {
       setLoading(true);
-      const response = await recruiterApi.getJobs();
-      setJobs(response.data);
+      setError(null);
+      const response = await recruiterApi.getJobs(recId);
+      setJobs(response.data || []);
     } catch (err) {
-      setError('Failed to load jobs',err);
+      console.error('Error loading jobs:', err);
+      setError(err.response?.data?.message || 'Failed to load jobs');
     } finally {
       setLoading(false);
     }
@@ -33,10 +56,24 @@ const ApplicantsManager = () => {
   const fetchApplicants = async (jobId) => {
     try {
       setLoading(true);
-      const response = await recruiterApi.getApplicants(jobId);
-      setApplicants(response.data);
+      setError(null);
+      console.log('Fetching applicants for job:', jobId);
+      const response = await recruiterApi.getJobApplicants(jobId);
+      console.log('Applicants response:', response.data);
+      
+      // Response contains job with applications array
+      if (response.data && response.data.applications) {
+        setApplicants(response.data.applications);
+        console.log('Applicants loaded:', response.data.applications.length);
+      } else {
+        console.log('No applications found in response');
+        setApplicants([]);
+      }
     } catch (err) {
-      setError('Failed to load applicants',err);
+      console.error('Error loading applicants:', err);
+      console.error('Error response:', err.response?.data);
+      setError(err.response?.data?.error || err.response?.data?.message || 'Failed to load applicants');
+      setApplicants([]);
     } finally {
       setLoading(false);
     }
@@ -44,12 +81,25 @@ const ApplicantsManager = () => {
 
   const updateStatus = async (applicationId, status) => {
     try {
-      await recruiterApi.updateApplicationStatus(applicationId, status);
+      console.log('Updating application status:', applicationId, 'to', status);
+      const response = await recruiterApi.updateApplicationStatus(applicationId, status);
+      console.log('Status update response:', response.data);
+      
+      // Update local state - use application_id not id
       setApplicants(applicants.map(app => 
-        app.id === applicationId ? { ...app, status } : app
+        app.application_id === applicationId ? { ...app, status } : app
       ));
+      
+      // Show success message briefly
+      const successMsg = 'Status updated successfully!';
+      setError(null);
+      
+      // Optional: You could show a success toast here
+      console.log(successMsg);
     } catch (err) {
-      setError('Failed to update status',err);
+      console.error('Error updating status:', err);
+      console.error('Error response:', err.response?.data);
+      setError(err.response?.data?.error || err.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -65,12 +115,12 @@ const ApplicantsManager = () => {
         <select
           value={selectedJob || ''}
           onChange={(e) => setSelectedJob(e.target.value)}
-          className="w-full p-2 border rounded mb-4"
+          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 mb-4"
         >
           <option value="">Select a job</option>
           {jobs.map(job => (
-            <option key={job.id} value={job.id}>
-              {job.title}
+            <option key={job.job_id} value={job.job_id}>
+              {job.job_title}
             </option>
           ))}
         </select>
@@ -81,31 +131,41 @@ const ApplicantsManager = () => {
           </div>
         )}
 
-        {selectedJob && (
+        {selectedJob && applicants.length === 0 && !loading && (
+          <div className="text-center py-8 text-gray-500">
+            <p className="text-4xl mb-2">📭</p>
+            <p>No applications yet for this job</p>
+          </div>
+        )}
+
+        {selectedJob && applicants.length > 0 && (
           <div className="space-y-4">
             {applicants.map(applicant => (
               <div 
-                key={applicant.id} 
+                key={applicant.application_id} 
                 className="border p-4 rounded-lg hover:bg-gray-50"
               >
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold">{applicant.name}</h3>
-                    <p className="text-sm text-gray-600">{applicant.email}</p>
-                    <p className="text-sm text-gray-600">
-                      Applied: {new Date(applicant.appliedDate).toLocaleDateString()}
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">{applicant.user?.full_name || 'Applicant'}</h3>
+                    <p className="text-sm text-gray-600">{applicant.user?.email || 'No email'}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      📅 Applied: {applicant.apply_date ? new Date(applicant.apply_date).toLocaleDateString() : 'N/A'}
                     </p>
+                    {applicant.user?.mobile_no && (
+                      <p className="text-sm text-gray-600">
+                        📞 {applicant.user.mobile_no}
+                      </p>
+                    )}
                   </div>
                   <div className="space-x-2">
                     <select
-                      value={applicant.status}
-                      onChange={(e) => updateStatus(applicant.id, e.target.value)}
+                      value={applicant.status || 'PENDING'}
+                      onChange={(e) => updateStatus(applicant.application_id, e.target.value)}
                       className="p-2 border rounded text-sm"
                     >
                       <option value="PENDING">Pending</option>
-                      <option value="REVIEWING">Reviewing</option>
-                      <option value="SHORTLISTED">Shortlisted</option>
-                      <option value="INTERVIEWED">Interviewed</option>
+                      <option value="APPLIED">Applied</option>
                       <option value="ACCEPTED">Accepted</option>
                       <option value="REJECTED">Rejected</option>
                     </select>
@@ -113,30 +173,26 @@ const ApplicantsManager = () => {
                 </div>
                 
                 <div className="mt-4 space-y-2">
-                  <a 
-                    href={applicant.resumeUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm"
-                  >
-                    View Resume
-                  </a>
+                  {applicant.resume && (
+                    <a 
+                      href={applicant.resume} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline text-sm block"
+                    >
+                      📄 View Resume
+                    </a>
+                  )}
                   
-                  {applicant.coverLetter && (
-                    <p className="text-sm text-gray-600">
-                      <strong>Cover Letter:</strong><br />
-                      {applicant.coverLetter}
-                    </p>
+                  {applicant.cover_letter && (
+                    <div className="text-sm text-gray-600 mt-2">
+                      <strong>Cover Letter:</strong>
+                      <p className="mt-1">{applicant.cover_letter}</p>
+                    </div>
                   )}
                 </div>
               </div>
             ))}
-
-            {applicants.length === 0 && (
-              <p className="text-center text-gray-500 py-4">
-                No applicants yet for this job.
-              </p>
-            )}
           </div>
         )}
       </div>

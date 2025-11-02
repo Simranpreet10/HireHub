@@ -36,8 +36,6 @@ async function applyForJob(req, res){
                 user_id: userId,
                 message,
                 notification_type: "Application",
-                created_at: new Date(),
-                seen: false,
             },
         });
 
@@ -55,7 +53,10 @@ async function applyForJob(req, res){
             });
         }
 
-        res.status(201).json({ message:"Application submitted, notification sent and mail delivered."});
+        res.status(201).json({ 
+            message: "Application submitted, notification sent and mail delivered.",
+            application: application
+        });
     } catch(err){
         console.error("Error in applyForJob: ",err);
         res.status(500).json({error:"Server Error"});
@@ -119,20 +120,81 @@ async function updateApplicationStatus(req, res){
             }
         });
 
-        const emailTemplate=`Congratulations! You've advanced to the next round (${newStatus}) for the position (${updatedApplication.job.job_title}).`;
+        // Different email templates based on status
+        let emailSubject = "";
+        let emailTemplate = "";
+        
+        const jobTitle = updatedApplication.job.job_title;
+        const userName = updatedApplication.user.full_name || "Candidate";
+        
+        if (newStatus.toUpperCase() === "REJECTED") {
+            emailSubject = "Application Status Update";
+            emailTemplate = `Dear ${userName},
+
+Thank you for your interest in the ${jobTitle} position at our company.
+
+We regret to inform you that after careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs.
+
+We appreciate the time and effort you invested in the application process. Your resume will be kept on file for future opportunities that may be a better fit for your skills and experience.
+
+We wish you all the best in your job search and future endeavors.
+
+Best regards,
+Recruitment Team`;
+        } else if (newStatus.toUpperCase() === "ACCEPTED") {
+            emailSubject = "Congratulations! Job Offer";
+            emailTemplate = `Dear ${userName},
+
+Congratulations! We are pleased to inform you that you have been selected for the ${jobTitle} position.
+
+Your skills, experience, and performance throughout the interview process have impressed us, and we believe you will be a valuable addition to our team.
+
+We will be contacting you shortly with further details regarding the offer, onboarding process, and next steps.
+
+Welcome aboard!
+
+Best regards,
+Recruitment Team`;
+        } else if (newStatus.toUpperCase() === "SHORTLISTED") {
+            emailSubject = "You've been Shortlisted!";
+            emailTemplate = `Dear ${userName},
+
+Congratulations! We are pleased to inform you that you have been shortlisted for the ${jobTitle} position.
+
+Your application stood out among many qualified candidates, and we would like to move forward with the next round of our selection process.
+
+We will contact you soon with details about the next steps.
+
+Best regards,
+Recruitment Team`;
+        } else {
+            // Default message for other statuses
+            emailSubject = "Application Status Update";
+            emailTemplate = `Dear ${userName},
+
+Your application status for the ${jobTitle} position has been updated to: ${newStatus}.
+
+Thank you for your continued interest. We will keep you informed as we progress through our selection process.
+
+Best regards,
+Recruitment Team`;
+        }
+
         if(updatedApplication.user && updatedApplication.user.email){
             await sendEmail({
                 to: updatedApplication.user.email,
-                subject: "You have been shortlisted for the next Round!",
+                subject: emailSubject,
                 text: emailTemplate
             });
         }
-        res.json({message: "Statud updated, notification sent, and email delivered.", updatedApplication});
+        
+        res.json({message: "Status updated, notification sent, and email delivered.", updatedApplication});
     }catch(err){
         console.log("Error updating the application status", err);
         res.status(500).json({error: "Server Error"});
     }
 }
+
 
 // ✅ Get all applications (Admin View)
 const getAllApplications = async (req, res) => {
@@ -199,3 +261,64 @@ module.exports = {
   updateApplicationStatus,
   getAllApplications, 
 };
+
+async function withdrawApplication(req, res) {
+    try {
+        const { applicationId } = req.params;
+
+        // First, get the application details before deleting
+        const application = await prisma.application.findUnique({
+            where: {
+                application_id: parseInt(applicationId)
+            },
+            include: {
+                user: true,
+                job: true
+            }
+        });
+
+        if (!application) {
+            return res.status(404).json({ error: "Application not found" });
+        }
+
+        // Delete the application
+        await prisma.application.delete({
+            where: {
+                application_id: parseInt(applicationId)
+            }
+        });
+
+        // Send notification
+        const message = `Your application for "${application.job.job_title}" has been withdrawn successfully.`;
+        await prisma.notification.create({
+            data: {
+                user_id: application.user_id,
+                message,
+                notification_type: "Application",
+            },
+        });
+
+        // Send email notification
+        if (application.user && application.user.email) {
+            await sendEmail({
+                to: application.user.email,
+                subject: "Application Withdrawn",
+                text: message,
+            });
+        }
+
+        res.json({ message: "Application withdrawn successfully" });
+    } catch (err) {
+        console.error("Error withdrawing application:", err);
+        console.error("Error details:", err.message);
+        console.error("Stack trace:", err.stack);
+        res.status(500).json({ 
+            error: "Server Error",
+            message: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+}
+
+module.exports={applyForJob, getUserApplications, updateApplicationStatus, withdrawApplication};
+

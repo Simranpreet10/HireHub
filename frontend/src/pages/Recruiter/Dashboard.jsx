@@ -13,7 +13,7 @@ export default function RecruiterDashboard() {
     totalJobs: 0,
     activeJobs: 0,
     totalApplicants: 0,
-    pendingReview: 0,
+    expiredApplications: 0,
   });
   const nav = useNavigate();
 
@@ -39,39 +39,78 @@ export default function RecruiterDashboard() {
         setRecruiter(recruiterData);
         
         // Fetch company profile
-        try {
-          const companyRes = await API.raw.get(`/api/company/profile`);
-          setCompany(companyRes.data);
-        } catch (err) {
-          console.log("No company profile found", err);
+        if (recruiterData.company_id) {
+          try {
+            const companyRes = await API.raw.get(`/api/updatecompany/company/${recruiterData.company_id}`);
+            setCompany(companyRes.data);
+          } catch (err) {
+            console.log("No company profile found", err);
+          }
         }
 
         // Fetch jobs
-        try {
-          const jobsRes = await API.raw.get("/api/recruiter/jobs");
-          setJobs(jobsRes.data || []);
-          
-          // Calculate stats
-          const activeJobs = (jobsRes.data || []).filter(job => job.status === 'ACTIVE');
-          setStats(prev => ({
-            ...prev,
-            totalJobs: jobsRes.data.length,
-            activeJobs: activeJobs.length
-          }));
-        } catch (err) {
-          console.log("Failed to fetch jobs", err);
+        if (recruiterData.recruiter_id) {
+          try {
+            const jobsRes = await API.raw.get(`/api/getRecruiterJobs/recruiter/${recruiterData.recruiter_id}/jobs`);
+            const jobsData = jobsRes.data || [];
+            setJobs(jobsData);
+            
+            // Calculate stats - A job is active if closing_date is in the future or not set
+            const now = new Date();
+            const activeJobs = jobsData.filter(job => {
+              if (!job.closing_date) return true; // No closing date means always active
+              return new Date(job.closing_date) > now;
+            });
+            
+            setStats(prev => ({
+              ...prev,
+              totalJobs: jobsData.length,
+              activeJobs: activeJobs.length
+            }));
+          } catch (err) {
+            console.log("Failed to fetch jobs", err);
+          }
         }
 
-        // Fetch recent applications
+        // Fetch applications via job tracking
         try {
-          const appsRes = await API.raw.get("/api/recruiter/applications/recent");
-          setApplications(appsRes.data || []);
+          const jobTrackRes = await API.raw.get("/api/job_track/jobs");
+          const allJobs = jobTrackRes.data || [];
+          
+          // Extract all applications from all jobs
+          const allApps = [];
+          allJobs.forEach(job => {
+            if (job.applications && job.applications.length > 0) {
+              job.applications.forEach(app => {
+                allApps.push({
+                  ...app,
+                  job: { job_title: job.job_title, job_id: job.job_id }
+                });
+              });
+            }
+          });
+          
+          // Sort by most recent
+          const sortedApps = allApps.sort((a, b) => 
+            new Date(b.apply_date) - new Date(a.apply_date)
+          );
+          
+          setApplications(sortedApps);
+          
+          // Calculate expired applications (applications for jobs past closing date)
+          const now = new Date();
+          const expiredApps = allApps.filter(app => {
+            // Find the job for this application
+            const jobForApp = allJobs.find(j => j.job_id === app.job_id);
+            if (!jobForApp || !jobForApp.closing_date) return false;
+            return new Date(jobForApp.closing_date) < now;
+          });
           
           // Update stats
           setStats(prev => ({
             ...prev,
-            totalApplicants: appsRes.data.length,
-            pendingReview: appsRes.data.filter(app => app.status === 'PENDING').length
+            totalApplicants: allApps.length,
+            expiredApplications: expiredApps.length
           }));
         } catch (err) {
           console.log("Failed to fetch applications", err);
@@ -119,24 +158,28 @@ export default function RecruiterDashboard() {
             value={stats.totalJobs}
             icon="💼"
             color="bg-blue-500"
+            onClick={() => stats.totalJobs > 0 && nav('/recruiter/jobs')}
           />
           <StatCard
             title="Active Jobs"
             value={stats.activeJobs}
             icon="🟢"
             color="bg-green-500"
+            onClick={() => stats.activeJobs > 0 && nav('/recruiter/jobs')}
           />
           <StatCard
             title="Total Applicants"
             value={stats.totalApplicants}
             icon="👥"
             color="bg-purple-500"
+            onClick={() => stats.totalApplicants > 0 && nav('/recruiter/applicants')}
           />
           <StatCard
-            title="Pending Review"
-            value={stats.pendingReview}
-            icon="📋"
-            color="bg-yellow-500"
+            title="Expired Applications"
+            value={stats.expiredApplications}
+            icon="⏰"
+            color="bg-orange-500"
+            onClick={() => stats.expiredApplications > 0 && nav('/recruiter/applicants')}
           />
         </div>
 
@@ -153,15 +196,15 @@ export default function RecruiterDashboard() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-600">Name</p>
-                  <p className="font-medium">{recruiter?.name}</p>
+                  <p className="font-medium">{recruiter?.full_name || recruiter?.name || "Not set"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium">{recruiter?.email}</p>
+                  <p className="font-medium">{recruiter?.email || "Not set"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Position</p>
-                  <p className="font-medium">{recruiter?.position || "Not provided"}</p>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="font-medium">{recruiter?.is_active ? "Active" : "Inactive"}</p>
                 </div>
               </div>
               <button
@@ -183,15 +226,15 @@ export default function RecruiterDashboard() {
                   <>
                     <div>
                       <p className="text-sm text-gray-600">Company Name</p>
-                      <p className="font-medium">{company.company_name}</p>
+                      <p className="font-medium">{company.company_name || "Not set"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Industry</p>
-                      <p className="font-medium">{company.industry}</p>
+                      <p className="font-medium">{company.industry_type || "Not set"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Location</p>
-                      <p className="font-medium">{company.location}</p>
+                      <p className="font-medium">{company.location || "Not set"}</p>
                     </div>
                   </>
                 ) : (
@@ -311,13 +354,23 @@ export default function RecruiterDashboard() {
 }
 
 // Helper Components
-function StatCard({ title, value, icon, color }) {
+function StatCard({ title, value, icon, color, onClick }) {
+  const isClickable = onClick && value > 0;
+  
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div 
+      className={`bg-white rounded-lg shadow-md p-6 transition ${
+        isClickable ? 'cursor-pointer hover:shadow-lg hover:scale-105 transform' : ''
+      }`}
+      onClick={isClickable ? onClick : undefined}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600 mb-1">{title}</p>
           <p className="text-3xl font-bold text-gray-900">{value}</p>
+          {isClickable && (
+            <p className="text-xs text-blue-600 mt-2">Click to view →</p>
+          )}
         </div>
         <div className={`${color} w-12 h-12 rounded-lg flex items-center justify-center text-2xl text-white`}>
           {icon}
@@ -330,35 +383,64 @@ function StatCard({ title, value, icon, color }) {
 function RecruiterJobCard({ job }) {
   const nav = useNavigate();
   
+  // Check if job is active or expired
+  const isActive = () => {
+    if (!job.closing_date) return true;
+    return new Date(job.closing_date) > new Date();
+  };
+  
+  // Format date properly
+  const getPostedDate = () => {
+    const dateField = job.posted_date || job.created_at || job.date_posted;
+    if (!dateField) return 'Recently';
+    try {
+      return new Date(dateField).toLocaleDateString();
+    } catch {
+      return 'Recently';
+    }
+  };
+  
+  // Format closing date
+  const getClosingDate = () => {
+    if (!job.closing_date) return 'No deadline';
+    try {
+      return new Date(job.closing_date).toLocaleDateString();
+    } catch {
+      return 'Invalid date';
+    }
+  };
+  
+  const jobActive = isActive();
+  
   return (
     <div className="border rounded-lg p-4 hover:shadow-md transition">
       <div className="flex justify-between items-start mb-2">
-        <div>
+        <div className="flex-1">
           <h3 className="font-semibold text-gray-900">{job.job_title}</h3>
-          <p className="text-sm text-gray-600">{job.location}</p>
+          <p className="text-sm text-gray-600">{job.location || 'Location not specified'}</p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          job.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+        <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${
+          jobActive ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
         }`}>
-          {job.status}
+          {jobActive ? '✓ Active' : '⏰ Expired'}
         </span>
       </div>
-      <div className="flex items-center text-xs text-gray-500 space-x-4 mb-3">
-        <span>📅 Posted: {new Date(job.created_at).toLocaleDateString()}</span>
-        <span>👥 Applications: {job.applications_count || 0}</span>
+      <div className="space-y-1 mb-3">
+        <div className="flex items-center text-xs text-gray-500">
+          <span>📅 Posted: {getPostedDate()}</span>
+          <span className="mx-2">•</span>
+          <span>👥 {job.applications_count || job._count?.applications || 0} Applications</span>
+        </div>
+        <div className="text-xs text-gray-500">
+          <span>🎯 Closes: {getClosingDate()}</span>
+        </div>
       </div>
-      <div className="flex space-x-2">
+      <div className="space-y-2">
         <button 
-          onClick={() => nav(`/recruiter/jobs/${job.job_id}`)}
-          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded text-sm transition"
+          onClick={() => nav('/recruiter/jobs')}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded text-sm transition"
         >
-          View Details
-        </button>
-        <button 
-          onClick={() => nav(`/recruiter/jobs/${job.job_id}/edit`)}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm transition"
-        >
-          Edit
+          View in Job Manager
         </button>
       </div>
     </div>
@@ -366,30 +448,53 @@ function RecruiterJobCard({ job }) {
 }
 
 function ApplicationCard({ application }) {
+  const nav = useNavigate();
+  
   const statusColors = {
     PENDING: "bg-yellow-100 text-yellow-800",
+    APPLIED: "bg-blue-100 text-blue-800",
     REVIEWING: "bg-blue-100 text-blue-800",
     SHORTLISTED: "bg-green-100 text-green-800",
+    ACCEPTED: "bg-green-100 text-green-800",
     REJECTED: "bg-red-100 text-red-800",
   };
 
   return (
     <div className="border rounded-lg p-4 hover:shadow-md transition">
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          <h3 className="font-semibold text-gray-900">{application.user?.full_name}</h3>
-          <p className="text-sm text-gray-600">{application.job?.job_title}</p>
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900">{application.user?.full_name || 'Applicant'}</h3>
+          <p className="text-sm text-gray-600 mt-1">{application.job?.job_title || 'Job Title'}</p>
+          {application.user?.email && (
+            <p className="text-xs text-gray-500 mt-1">📧 {application.user.email}</p>
+          )}
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+        <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
           statusColors[application.status] || statusColors.PENDING
         }`}>
-          {application.status}
+          {application.status || 'PENDING'}
         </span>
       </div>
-      <div className="flex items-center text-xs text-gray-500 space-x-4">
-        <span>📅 Applied: {new Date(application.apply_date).toLocaleDateString()}</span>
-        <button className="text-blue-500 hover:text-blue-600">View Details →</button>
+      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+        <span>📅 Applied: {application.apply_date ? new Date(application.apply_date).toLocaleDateString() : 'N/A'}</span>
+        {application.resume && (
+          <a 
+            href={application.resume} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:text-blue-600"
+            onClick={(e) => e.stopPropagation()}
+          >
+            📄 Resume
+          </a>
+        )}
       </div>
+      <button 
+        onClick={() => nav('/recruiter/applicants')}
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded text-sm transition"
+      >
+        Manage in Applicants Manager
+      </button>
     </div>
   );
 }

@@ -365,7 +365,7 @@ function Navbar() {
 
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-3">
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <>
                   <Link to={getDashboardLink()} className="text-sm text-gray-200 hover:text-white transition flex items-center">
                     <span className="mr-2">👤</span>
@@ -376,29 +376,21 @@ function Navbar() {
                     Logout
                   </button>
                 </>
-              ) : (
-                <>
-                  <Link to="/login" className="text-xl text-gray-200 hover:text-white transition">
-                    Log in
-                  </Link>
-
-                  <Link to="/signup" className="text-xl ml-2">
-                    <Button variant="primary">Sign up</Button>
-                  </Link>
-                </>
               )}
             </div>
 
             {/* Mobile / compact view actions */}
-            <div className="md:hidden">
-              {/* small dropdown for mobile (keeps it simple) */}
-              <MobileMenu
-                isAuthenticated={isAuthenticated}
-                userType={userType}
-                userName={userName}
-                onLogout={handleLogout}
-              />
-            </div>
+            {isAuthenticated && (
+              <div className="md:hidden">
+                {/* small dropdown for mobile (keeps it simple) */}
+                <MobileMenu
+                  isAuthenticated={isAuthenticated}
+                  userType={userType}
+                  userName={userName}
+                  onLogout={handleLogout}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
