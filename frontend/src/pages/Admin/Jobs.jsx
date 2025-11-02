@@ -1,66 +1,87 @@
+// src/pages/Recruiter/ViewAllJobs.jsx
 import React, { useEffect, useState } from "react";
-import adminApi from "../../components/services/AdminApi";
+import { useNavigate } from "react-router-dom";
+import { api } from "../../components/services/api";
+import JobCard from "../../components/jobs/JobCard";
 
-export default function AdminJobs() {
+export default function ViewAllJobs() {
   const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
+  // --- Fetch jobs ---
   const fetchJobs = async () => {
-    setLoading(true);
     try {
-      const res = await adminApi.getAllJobs();
+      setLoading(true);
+      const res = await api.getAllJobs();
       setJobs(res.data || []);
-    } catch (err) { 
+    } catch (err) {
+      console.error("❌ Failed to load jobs:", err);
+      alert("Failed to load jobs");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  // --- Handle toggle job status ---
+  const handleToggleStatus = async (jobId, currentStatus) => {
+    try {
+      const newStatus = !currentStatus;
+      const res = await api.raw.put(`/api/jobs/${jobId}/status`, { is_active: newStatus });
+      console.log("toggle response:", res.data);
+      setJobs((prev) =>
+        prev.map((j) => (j.job_id === jobId ? { ...j, is_active: newStatus } : j))
+      );
+    } catch (err) {
+      console.error("Failed to toggle:", err);
+      alert("Failed to update job status");
+    }
+  };
+
+  // --- Handle delete job ---
+  const handleDelete = async (jobId) => {
+    if (!window.confirm("Are you sure you want to delete this job?")) return;
+    try {
+      const res = await api.raw.delete(`/api/jobs/${jobId}`);
+      alert(res.data.message || "Job deleted");
+      fetchJobs();
+    } catch (err) {
       console.error(err);
-      alert("Failed to load jobs"); } finally { setLoading(false); }
+      alert("Failed to delete job");
+    }
   };
 
-  useEffect(() => { fetchJobs(); }, []);
-
-  const toggle = async (job_id, current) => {
-    try {
-      // Backend: updateJob expects partial fields. We're toggling is_active.
-      await adminApi.updateJob(job_id, { is_active: !current });
-      setJobs((s) => s.map(j => j.job_id === job_id ? { ...j, is_active: !current } : j));
-    } catch (err) { console.error(err);alert("Failed to update job"); }
+  // --- Navigate to job details page ---
+  const handleView = (jobId) => {
+    navigate(`/recruiter/job/${jobId}`);
   };
 
-  const del = async (job_id) => {
-    if (!confirm("Delete job and its applications permanently?")) return;
-    try {
-      await adminApi.deleteJob(job_id);
-      setJobs((s) => s.filter(j => j.job_id !== job_id));
-    } catch (err) {console.error(err); alert("Delete failed"); }
-  };
+  if (loading)
+    return <div className="p-8 text-center text-gray-500">Loading jobs...</div>;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Jobs</h1>
-        <button onClick={fetchJobs} className="px-3 py-1 border rounded">Refresh</button>
-      </div>
+    <div className="max-w-5xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">All Posted Jobs</h1>
 
-      {loading && <div>Loading jobs...</div>}
-      <div className="space-y-3">
-        {!loading && jobs.length === 0 && <div>No jobs found</div>}
-        {jobs.map(job => (
-          <div key={job.job_id} className="bg-white rounded shadow p-4 flex justify-between items-start">
-            <div>
-              <div className="text-lg font-semibold">{job.job_title || job.title}</div>
-              <div className="text-sm text-gray-600">{job.company?.company_name || job.recruiter?.company?.company_name || "-"}</div>
-              <div className="text-xs text-gray-500 mt-1">Posted: {job.posted_date ? new Date(job.posted_date).toLocaleDateString() : "-"}</div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button onClick={() => toggle(job.job_id, job.is_active)} className={`px-3 py-1 rounded ${job.is_active ? "bg-yellow-500" : "bg-green-600"} text-white`}>
-                {job.is_active ? "Block" : "Unblock"}
-              </button>
-
-              <button onClick={() => del(job.job_id)} className="px-3 py-1 bg-red-500 text-white rounded">Delete Permanently</button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {jobs.length === 0 ? (
+        <p className="text-gray-500">No jobs found.</p>
+      ) : (
+        <div className="grid gap-5">
+          {jobs.map((job) => (
+            <JobCard
+              key={job.job_id}
+              job={job}
+              onToggleStatus={handleToggleStatus}
+              onDelete={handleDelete}
+              onView={handleView}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

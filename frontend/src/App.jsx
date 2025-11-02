@@ -37,8 +37,9 @@ import AdminUsers from "./pages/Admin/Users";
 import AdminJobs from "./pages/Admin/Jobs";
 import Recruiter from "./pages/Admin/Recruiter";
 import UserProfile from "./pages/Admin/UserProfile";
+import AdminApplications from "./pages/Admin/Applications"; 
 
-//Recruiter Pages
+// Recruiter Pages
 import RecruiterDashboard from "./pages/Recruiter/Dashboard";
 import JobManager from "./pages/Recruiter/JobManager";
 import JobForm from "./pages/Recruiter/JobForm";
@@ -47,7 +48,7 @@ import CompanyProfile from "./pages/Recruiter/CompanyProfile";
 import ApplicantsView from "./pages/Recruiter/ApplicantsManager";
 // import JobsWithApplicants from "./pages/Recruiter/JobsWithApplicants";
 
-/** Optional: simple admin auth guard (JWT in localStorage named 'adminToken') */
+/** Admin Auth Guard */
 function RequireAdmin({ children }) {
   const token = localStorage.getItem("adminToken");
   if (!token) return <Navigate to="/admin/login" replace />;
@@ -56,7 +57,6 @@ function RequireAdmin({ children }) {
 
 function AppContent() {
   const location = useLocation();
-  // hide navbar/footer for admin routes
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
@@ -89,10 +89,10 @@ function AppContent() {
           <Route path="/recruiter/applicants" element={<ApplicantsView />} />
           {/* <Route path="/recruiter/jobs-with-applicants" element={<JobsWithApplicants />} /> */}
 
-          {/* Admin login (kept outside layout) */}
+          {/* Admin login (outside layout) */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
-          {/* Nested admin routes (use relative child paths) */}
+          {/* Nested admin routes */}
           <Route
             path="/admin/*"
             element={
@@ -104,13 +104,13 @@ function AppContent() {
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
-            
             <Route path="users/:userId/profile" element={<UserProfile />} />
             <Route path="jobs" element={<AdminJobs />} />
             <Route path="recruiter" element={<Recruiter />} />
+            <Route path="applications" element={<AdminApplications />} /> {/* ✅ Added route */}
           </Route>
 
-          {/* 404 */}
+          {/* 404 Page */}
           <Route
             path="*"
             element={

@@ -1,12 +1,15 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getJobDetails } = require('../controllers/viewJobController');
-
+const {
+  getJobDetails,
+  toggleJobStatus,
+  deleteJob,
+} = require("../controllers/viewJobController");
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-// Route to get ALL jobs (for admin dashboard)
+// Get all jobs
 router.get("/", async (req, res) => {
   try {
     const jobs = await prisma.job.findMany({
@@ -21,9 +24,13 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get('/:job_id', getJobDetails);
+// Get job by ID
+router.get("/:job_id", getJobDetails);
+
+// ✅ Toggle status
+router.put("/:job_id/status", toggleJobStatus);
+
+// ✅ Delete job
+router.delete("/:job_id", deleteJob);
 
 module.exports = router;
-
-
-

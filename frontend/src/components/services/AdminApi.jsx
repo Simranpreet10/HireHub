@@ -53,11 +53,16 @@ const adminApi = {
   deleteRecruiter: (id) => raw.delete(`/api/admin/recruiters/${id}`),
 
   /** ---------- COMPANY MANAGEMENT ---------- **/
-  getAllCompanies: () => raw.get("/api/admin/companies"),
+getAllCompanies: () => raw.get("/api/admin/companies"),
+getCompanyProfile: (companyId) => raw.get(`/api/admin/companies/${companyId}`),
 
-  /** ---------- JOB MANAGEMENT ---------- **/
-  getAllJobs: () => raw.get("/api/admin/jobs"),
-  deleteJob: (id) => raw.delete(`/api/admin/jobs/${id}`),
+/** ---------- JOB MANAGEMENT ---------- **/
+getAllJobs: () => raw.get("/api/viewjob"),
+getJob: (jobId) => raw.get(`/api/viewjob/${jobId}`),
+
+updateJob: (jobId, data) => raw.put(`/api/admin/jobs/${jobId}`, data),
+deleteJob: (jobId) => raw.delete(`/api/admin/jobs/${jobId}`),
+
 };
 
 export default adminApi;

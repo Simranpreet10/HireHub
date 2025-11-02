@@ -52,16 +52,7 @@ export default function AdminLayout() {
           >
             <Briefcase size={18} /> Recruiter
           </NavLink>
-        <NavLink
-            to="/admin/company"
-            className={({ isActive }) =>
-              `flex items-center gap-2 p-2 rounded-md ${
-                isActive ? "bg-indigo-900" : "hover:bg-indigo-800"
-              }`
-            }
-          >
-            <Briefcase size={18} /> company
-          </NavLink>
+        
           <NavLink
             to="/admin/jobs"
             className={({ isActive }) =>
@@ -71,6 +62,18 @@ export default function AdminLayout() {
             }
           >
             <Briefcase size={18} /> Jobs
+          </NavLink>
+
+
+           <NavLink
+            to="/admin/applications"
+            className={({ isActive }) =>
+              `flex items-center gap-2 p-2 rounded-md ${
+                isActive ? "bg-indigo-900" : "hover:bg-indigo-800"
+              }`
+            }
+          >
+            <Briefcase size={18} /> Applications
           </NavLink>
         </nav>
 

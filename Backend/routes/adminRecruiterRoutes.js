@@ -9,5 +9,5 @@ router.get("/recruiters/:recruiterId/profile", adminAuth, adminRecruiterControll
 router.put("/recruiters/:recruiterId/toggle-status", adminAuth, adminRecruiterController.toggleRecruiterStatus); // PUT
 router.delete("/recruiters/:recruiterId", adminAuth, adminRecruiterController.deleteRecruiter);
 router.get("/companies", adminAuth, adminRecruiterController.viewAllCompanies);
-
+router.get("/companies/:companyId", adminAuth, adminRecruiterController.getCompanyProfile);
 module.exports = router;

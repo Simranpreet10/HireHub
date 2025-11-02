@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import adminApi from "../../components/services/AdminApi";
-import ProfileModal from "../Admin/UserProfile"; // make sure this file exists
+import ProfileModal from "../Admin/RecruiterProfile"; // same modal will be used for recruiter & company
 
 export default function AdminRecruiters() {
   const [recruiters, setRecruiters] = useState([]);
@@ -37,11 +37,10 @@ export default function AdminRecruiters() {
       const action = recruiter.is_active ? "deactivate" : "activate";
       if (!confirm(`Do you want to ${action} this recruiter?`)) return;
 
-      // call backend toggle endpoint (expects PUT)
       const res = await adminApi.toggleRecruiterStatus(recruiter_id);
       alert(res.data?.message || `Recruiter ${action}d successfully`);
 
-      // update local state
+      // refresh or update local state
       setRecruiters((prev) =>
         prev.map((r) =>
           r.recruiter_id === recruiter_id ? { ...r, is_active: !r.is_active } : r
@@ -70,12 +69,23 @@ export default function AdminRecruiters() {
   const viewProfile = async (recruiter_id) => {
     try {
       const res = await adminApi.getRecruiterProfile(recruiter_id);
-      // set selected to exact object returned by backend
       setSelected(res.data || null);
       setProfileOpen(true);
     } catch (err) {
       console.error("Failed to fetch recruiter profile:", err);
       alert(err.response?.data?.message || "Failed to fetch profile");
+    }
+  };
+
+  // view company profile (fetch company by id, open modal with type="company")
+  const viewCompany = async (companyId) => {
+    try {
+      const res = await adminApi.getCompanyProfile(companyId);
+      setSelected(res.data || null);
+      setProfileOpen(true);
+    } catch (err) {
+      console.error("Failed to fetch company profile:", err);
+      alert(err.response?.data?.message || "Failed to fetch company profile");
     }
   };
 
@@ -101,18 +111,26 @@ export default function AdminRecruiters() {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => viewProfile(r.recruiter_id)}
-                className="px-3 py-1 border rounded"
+                className="px-3 py-1 border rounded  bg-blue-500 text-white  hover:bg-blue-600"
               >
-                View
+                View Profile
+              </button>
+
+              <button
+                onClick={() => viewCompany(r.company_id)}
+                className="px-3 py-1 border rounded  bg-blue-500 text-white hover:bg-blue-600"
+                title="View Company"
+              >
+                View Company
               </button>
 
               <button
                 onClick={() => toggle(r.recruiter_id)}
                 className={`px-3 py-1 rounded text-white ${
-                  r.is_active ? "bg-yellow-500" : "bg-green-600"
+                  r.is_active ?   "bg-green-600":"bg-yellow-500"
                 }`}
               >
-                {r.is_active ? "Deactivate" : "Activate"}
+                {r.is_active ? "Activate" : "Deactivate"}
               </button>
 
               <button
@@ -128,9 +146,12 @@ export default function AdminRecruiters() {
 
       <ProfileModal
         open={profileOpen}
-        onClose={() => setProfileOpen(false)}
+        onClose={() => {
+          setProfileOpen(false);
+          setSelected(null);
+        }}
         profile={selected}
-        type="recruiter"
+        type={selected?.company_id ? "recruiter" : selected?.company_name ? "company" : "recruiter"}
         onCompanyEdit={(companyId) => nav(`/admin/company/${companyId}/edit`)}
       />
     </div>
