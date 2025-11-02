@@ -44,7 +44,8 @@ const recruiterUpdate = require("./routes/recruiterupdate");
 const jobTrack = require("./routes/job_trackRoute");
 const adminUserRoutes = require("./routes/adminUserRoutes");
 const adminRecruiterRoutes = require("./routes/adminRecruiterRoutes");
-// const adminApproval = require("./routes/adminApprovalRoute");
+
+
 
 // Route Bindings
 app.use("/api/userauth", authRoutes);

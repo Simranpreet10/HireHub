@@ -195,6 +195,73 @@ Recruitment Team`;
     }
 }
 
+
+// ✅ Get all applications (Admin View)
+const getAllApplications = async (req, res) => {
+  try {
+    const applications = await prisma.application.findMany({
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            full_name: true,
+            email: true,
+            mobile_no: true,
+            work_status: true,
+          },
+        },
+        job: {
+          select: {
+            job_id: true,
+            job_title: true,
+            employment_type: true,
+            experience_required: true,
+            ctc: true,
+            location: true,
+            company: {
+              select: {
+                company_id: true,
+                company_name: true,
+                location: true,
+                company_logo: true,
+                industry_type: true,
+              },
+            },
+            recruiter: {
+              select: {
+                recruiter_id: true,
+                full_name: true,
+                email: true,
+                company: {
+                  select: {
+                    company_name: true,
+                    location: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        apply_date: "desc",
+      },
+    });
+
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error("❌ Error fetching all applications:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+module.exports = {
+  applyForJob,
+  getUserApplications,
+  updateApplicationStatus,
+  getAllApplications, 
+};
+
 async function withdrawApplication(req, res) {
     try {
         const { applicationId } = req.params;
@@ -254,3 +321,4 @@ async function withdrawApplication(req, res) {
 }
 
 module.exports={applyForJob, getUserApplications, updateApplicationStatus, withdrawApplication};
+

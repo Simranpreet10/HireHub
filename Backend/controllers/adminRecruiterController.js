@@ -97,3 +97,28 @@ exports.viewAllCompanies = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+// Add this export to controllers/adminRecruiterController.js (near other exports)
+
+exports.getCompanyProfile = async (req, res) => {
+  try {
+    const companyId = parseInt(req.params.companyId, 10);
+    if (isNaN(companyId)) return res.status(400).json({ message: "Invalid company id" });
+
+    const company = await prisma.company.findUnique({
+      where: { company_id: companyId },
+      include: {
+        recruiters: true,   // list of recruiters
+        jobs: true          // list of jobs
+      }
+    });
+
+    if (!company) return res.status(404).json({ message: "Company not found" });
+
+    res.json(company);
+  } catch (error) {
+    console.error("getCompanyProfile:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

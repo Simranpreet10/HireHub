@@ -38,7 +38,8 @@ export default function Dashboard() {
           adminApi.getAllUsers(),
           adminApi.getAllRecruiters(),
           adminApi.getAllJobs(),
-          adminApi.raw.get("/api/applications") // if you have such route; fallback below
+          // adminApi.raw.get("/api/applications") // if you have such route; fallback below
+          adminApi.raw.get("/api/applications/admin/all") // using public endpoint as fallback
         ]);
 
         if (uRes.status === "fulfilled") setUsers(uRes.value.data || []);
