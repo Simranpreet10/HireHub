@@ -36,7 +36,7 @@ import AdminDashboard from "./pages/Admin/Dashboard";
 import AdminUsers from "./pages/Admin/Users";
 import AdminJobs from "./pages/Admin/Jobs";
 import Recruiter from "./pages/Admin/Recruiter";
-import UserProfile from "./pages/Admin/ProfileModal";
+import UserProfile from "./pages/Admin/UserProfile";
 
 //Recruiter Pages
 import RecruiterDashboard from "./pages/Recruiter/Dashboard";

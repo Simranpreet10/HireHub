@@ -42,7 +42,7 @@ export default function UserDashboard() {
           const profileRes = await API.raw.get(`/api/profile/${userData.user_id}`);
           setProfile(profileRes.data);
         } catch (err) {
-          console.log("No profile found",err);
+          console.log("No profile found");
         }
 
         // Fetch applications
@@ -59,7 +59,7 @@ export default function UserDashboard() {
             rejectedApplications: apps.filter(a => a.status.toLowerCase() === 'rejected').length,
           });
         } catch (err) {
-          console.log("No applications found",err);
+          console.log("No applications found");
         }
 
         // Fetch recent jobs
@@ -67,7 +67,7 @@ export default function UserDashboard() {
           const jobsRes = await API.raw.get("/api/viewjob");
           setRecentJobs((jobsRes.data || []).slice(0, 4));
         } catch (err) {
-          console.log("Failed to fetch jobs",err);
+          console.log("Failed to fetch jobs");
         }
       }
     } catch (error) {

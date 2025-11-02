@@ -1,77 +1,54 @@
-import React, { useState } from "react";
-import api from "../../components/services/api"; // default export from your api.js
-import recruiterApi from "../../components/services/recruiterApi"; // ensure this path matches your file
+// src/pages/Auth/Login.jsx
+import { useState } from "react";
+import API from "../../components/services/api";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../components/context/AuthContext"; // optional: your existing context
 
-export default function UnifiedLogin() {
-  const [role, setRole] = useState("user"); // "user" or "recruiter"
+export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const nav = useNavigate();
+  const auth = useAuth?.() || null; // if your app has AuthContext
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
-      let res;
-      if (role === "recruiter") {
-        // recruiterApi.login returns an axios response
-        res = await recruiterApi.login({ email: form.email, password: form.password });
-      } else {
-        // api.login returns the parsed data (per your api.js)
-        res = await api.login(form.email, form.password);
-      }
+      const data = await API.login(form.email, form.password);
+      // backend returns { message: "LoggedIn", token }
+      const token = data.token;
+      if (!token) throw new Error("No token returned");
 
-      // Normalize: res may be axios response ({ data }) or already data
-      const data = res?.data ?? res;
-      const token = data?.token ?? data?.accessToken ?? null;
-      if (!token) throw new Error("No token returned from server");
+      // store token locally
+      localStorage.setItem("token", token);
+      API.setAuthToken(token);
 
-      // storage key & redirect
-      const storageKey = role === "recruiter" ? "recruiterToken" : "token";
-      const redirectTo = role === "recruiter" ? "/recruiter/dashboard" : "/user-dashboard";
-
-      // Persist token & set Authorization header (use api helper if available)
-      if (typeof api.setAuthToken === "function") {
-        api.setAuthToken(token, storageKey);
-      } else {
-        try {
-          api.raw.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-          localStorage.setItem(storageKey, token);
-        } catch (err) {
-          console.warn("Failed to set auth header manually:", err);
-        }
-      }
-
-      // Save decoded token payload if present, otherwise save returned user object
+      // Decode token to get user data
       try {
-        const parts = token.split(".");
-        if (parts.length === 3) {
-          const decoded = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-          const payload = decoded.user ?? decoded;
-          const dataKey = role === "recruiter" ? "recruiterData" : "userData";
-          localStorage.setItem(dataKey, JSON.stringify(payload));
-        } else {
-          const userObj = data.user ?? data.recruiter ?? data;
-          const dataKey = role === "recruiter" ? "recruiterData" : "userData";
-          if (userObj) localStorage.setItem(dataKey, JSON.stringify(userObj));
-        }
-      } catch (err) {
-        console.warn("Token decode/save failed:", err);
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        localStorage.setItem("userData", JSON.stringify(tokenPayload));
+      } catch (decodeErr) {
+        console.warn("Failed to decode token:", decodeErr);
       }
 
-      // Notify other parts of app to refresh auth state (Navbar etc.)
+      // if you have an auth context with login() method, call it
       try {
-        window.dispatchEvent(new Event("authChange"));
-      } catch (e) {e}
+        if (auth && typeof auth.login === "function") {
+          auth.login(token);
+        }
+      } catch (ctxErr) {
+        console.warn("auth context login failed:", ctxErr);
+      }
 
-      // navigate
-      nav(redirectTo);
+      // Trigger navbar update by dispatching a custom event
+      window.dispatchEvent(new Event('authChange'));
+
+      // redirect to user dashboard
+      nav("/user-dashboard");
     } catch (err) {
-      console.error("Login error:", err);
+      console.error("login error:", err);
       setError(err.response?.data?.message || err.message || "Login failed");
     } finally {
       setLoading(false);
@@ -80,64 +57,43 @@ export default function UnifiedLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white p-6 shadow-md rounded">
-          <h2 className="text-xl font-semibold mb-4 text-center">Login</h2>
+      <form onSubmit={handleSubmit} className="bg-white p-6 shadow-md rounded w-full max-w-md">
+        <h2 className="text-xl font-semibold mb-4 text-center">Login</h2>
 
-          {/* Role selector */}
-          <div className="flex justify-center gap-3 mb-4">
-            <button
-              type="button"
-              onClick={() => setRole("user")}
-              className={`px-3 py-1 rounded ${role === "user" ? "bg-blue-600 text-white" : "bg-gray-100"}`}
-            >
-              User
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole("recruiter")}
-              className={`px-3 py-1 rounded ${role === "recruiter" ? "bg-blue-600 text-white" : "bg-gray-100"}`}
-            >
-              Recruiter
-            </button>
-          </div>
+        {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
 
-          {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
+        <input
+          type="email"
+          placeholder="Email"
+          className="border p-2 w-full mb-2"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          required
+        />
 
-          <form onSubmit={handleSubmit}>
-            <input
-              type="email"
-              placeholder="Email"
-              className="border p-2 w-full mb-2"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              className="border p-2 w-full mb-4"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
+        <input
+          type="password"
+          placeholder="Password"
+          className="border p-2 w-full mb-4"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          required
+        />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-500 text-white py-2 px-4 rounded w-full"
-            >
-              {loading ? "Logging in..." : `Login as ${role === "recruiter" ? "Recruiter" : "User"}`}
-            </button>
-          </form>
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-500 text-white py-2 px-4 rounded w-full"
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
 
-          <div className="mt-3 text-center">
-            <button type="button" className="text-sm text-gray-600 underline" onClick={() => nav("/signup")}>
-              Create an account
-            </button>
-          </div>
+        <div className="mt-3 text-center">
+          <button type="button" className="text-sm text-gray-600 underline" onClick={() => nav("/signup")}>
+            Create an account
+          </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

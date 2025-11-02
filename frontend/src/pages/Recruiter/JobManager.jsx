@@ -1,46 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '../../components/services/api';
-import JobCard from '../../components/jobs/JobCard';
+import React, { useEffect, useState } from "react";
+import recruiterApi from "../../components/services/RecruiterApi";
 
-const JobsManager = () => {
+export default function ManageJobs({ recruiterId }) {
   const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchJobs();
   }, []);
 
   const fetchJobs = async () => {
-    try {
-      const response = await api.get('/recruiter/jobs');
-      setJobs(response.data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    const res = await recruiterApi.getJobs(recruiterId);
+    setJobs(res.data);
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  const handleDelete = async (jobId) => {
+    await recruiterApi.deleteJob(recruiterId, jobId);
+    fetchJobs();
+  };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Jobs</h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
-          Post New Job
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {jobs.map(job => (
-          <JobCard key={job.id} job={job} onUpdate={fetchJobs} />
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Manage Jobs</h2>
+      <div className="space-y-4">
+        {jobs.map((job) => (
+          <div key={job.job_id} className="border p-4 rounded flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold">{job.job_title}</h3>
+              <p className="text-gray-500">{job.location}</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleDelete(job.job_id)}
+                className="bg-red-600 text-white px-3 py-1 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         ))}
       </div>
     </div>
   );
-};
-
-export default JobsManager;
+}

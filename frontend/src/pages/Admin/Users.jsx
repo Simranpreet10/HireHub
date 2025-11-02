@@ -116,16 +116,15 @@ export default function AdminUsers() {
                   onClick={() => handleToggleStatus(userId)}
                   className={`px-3 py-1 rounded text-white ${
                     user.is_active
-                      ? "bg-yellow-500 hover:bg-yellow-600"
-                      : "bg-green-500 hover:bg-green-600"
+                      ?  "bg-green-500 hover:bg-green-600":"bg-yellow-500 hover:bg-yellow-600"
                   }`}
                   disabled={actionLoading[userId]}
                 >
                   {actionLoading[userId]
                     ? "Processing..."
                     : user.is_active
-                    ? "Block"
-                    : "Unblock"}
+                    ? "Activate"
+                    : "Deactivate"}
                 </button>
 
                 <button

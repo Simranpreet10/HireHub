@@ -1,77 +1,138 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import adminApi from "../../components/services/AdminApi";
-import ProfileModal from "../../pages/Admin/ProfileModal";
+import ProfileModal from "../Admin/UserProfile"; // make sure this file exists
 
 export default function AdminRecruiters() {
   const [recruiters, setRecruiters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const nav = useNavigate();
 
+  // fetch all recruiters
   const fetch = async () => {
     setLoading(true);
     try {
       const res = await adminApi.getAllRecruiters();
       setRecruiters(res.data || []);
-    } catch (err) { console.log(err);alert("Failed to load recruiters"); } finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetch(); }, []);
-
-  const toggle = async (recruiter_id, current) => {
-    try {
-      await adminApi.toggleRecruiterStatus(recruiter_id, { is_active: !current });
-      setRecruiters((s) => s.map(r => r.recruiter_id === recruiter_id ? { ...r, is_active: !current } : r));
     } catch (err) {
-      console.log(err); alert("Failed to update"); }
+      console.error("Failed to load recruiters:", err);
+      alert("Failed to load recruiters");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    fetch();
+  }, []);
+
+  // toggle status (activate <-> deactivate)
+  const toggle = async (recruiter_id) => {
+    try {
+      const recruiter = recruiters.find((r) => r.recruiter_id === recruiter_id);
+      if (!recruiter) return;
+
+      const action = recruiter.is_active ? "deactivate" : "activate";
+      if (!confirm(`Do you want to ${action} this recruiter?`)) return;
+
+      // call backend toggle endpoint (expects PUT)
+      const res = await adminApi.toggleRecruiterStatus(recruiter_id);
+      alert(res.data?.message || `Recruiter ${action}d successfully`);
+
+      // update local state
+      setRecruiters((prev) =>
+        prev.map((r) =>
+          r.recruiter_id === recruiter_id ? { ...r, is_active: !r.is_active } : r
+        )
+      );
+    } catch (err) {
+      console.error("Toggle failed:", err);
+      alert(err.response?.data?.message || "Failed to update status");
+    }
+  };
+
+  // delete recruiter
   const del = async (recruiter_id) => {
     if (!confirm("Delete recruiter and their jobs permanently?")) return;
     try {
       await adminApi.deleteRecruiter(recruiter_id);
-      setRecruiters((s) => s.filter(r => r.recruiter_id !== recruiter_id));
+      setRecruiters((prev) => prev.filter((r) => r.recruiter_id !== recruiter_id));
+      alert("Recruiter deleted successfully");
     } catch (err) {
-      console.log(err); alert("Delete failed"); }
+      console.error("Delete failed:", err);
+      alert(err.response?.data?.message || "Delete failed");
+    }
   };
 
+  // view single recruiter profile (uses admin API single recruiter endpoint)
   const viewProfile = async (recruiter_id) => {
     try {
-      const all = await adminApi.getAllRecruiters();
-      const r = (all.data || []).find(x => x.recruiter_id === recruiter_id);
-      setSelected(r || { recruiter_id });
+      const res = await adminApi.getRecruiterProfile(recruiter_id);
+      // set selected to exact object returned by backend
+      setSelected(res.data || null);
       setProfileOpen(true);
     } catch (err) {
-      console.log(err); alert("Failed to fetch profile"); }
+      console.error("Failed to fetch recruiter profile:", err);
+      alert(err.response?.data?.message || "Failed to fetch profile");
+    }
   };
 
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-4">Recruiters</h1>
       {loading && <div>Loading...</div>}
+
       <div className="space-y-3">
-        {recruiters.map(r => (
-          <div key={r.recruiter_id} className="bg-white p-4 rounded shadow flex justify-between items-center">
+        {recruiters.map((r) => (
+          <div
+            key={r.recruiter_id}
+            className="bg-white p-4 rounded shadow flex justify-between items-center"
+          >
             <div>
               <div className="font-semibold">{r.full_name}</div>
               <div className="text-sm text-gray-600">{r.email}</div>
-              <div className="text-xs text-gray-500">Company ID: {r.company_id}</div>
+              <div className="text-xs text-gray-500">
+                Company: {r.company?.company_name || "N/A"}
+              </div>
             </div>
 
             <div className="flex items-center space-x-2">
-              <button onClick={() => viewProfile(r.recruiter_id)} className="px-3 py-1 border rounded">View Recruiter</button>
-
-              <button onClick={() => toggle(r.recruiter_id, r.is_active)} className={`px-3 py-1 rounded ${r.is_active ? "bg-yellow-500" : "bg-green-600"} text-white`}>
-                {r.is_active ? "Block" : "Unblock"}
+              <button
+                onClick={() => viewProfile(r.recruiter_id)}
+                className="px-3 py-1 border rounded"
+              >
+                View
               </button>
 
-              <button onClick={() => del(r.recruiter_id)} className="bg-red-500 px-3 py-1 rounded text-white">Delete Permanently</button>
+              <button
+                onClick={() => toggle(r.recruiter_id)}
+                className={`px-3 py-1 rounded text-white ${
+                  r.is_active ? "bg-yellow-500" : "bg-green-600"
+                }`}
+              >
+                {r.is_active ? "Deactivate" : "Activate"}
+              </button>
+
+              <button
+                onClick={() => del(r.recruiter_id)}
+                className="bg-red-500 px-3 py-1 rounded text-white"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} profile={selected} type="recruiter" />
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        profile={selected}
+        type="recruiter"
+        onCompanyEdit={(companyId) => nav(`/admin/company/${companyId}/edit`)}
+      />
     </div>
   );
 }

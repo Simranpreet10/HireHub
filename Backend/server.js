@@ -44,7 +44,7 @@ const recruiterUpdate = require("./routes/recruiterupdate");
 const jobTrack = require("./routes/job_trackRoute");
 const adminUserRoutes = require("./routes/adminUserRoutes");
 const adminRecruiterRoutes = require("./routes/adminRecruiterRoutes");
-const adminApproval = require("./routes/adminApprovalRoute");
+// const adminApproval = require("./routes/adminApprovalRoute");
 
 // Route Bindings
 app.use("/api/userauth", authRoutes);
@@ -62,9 +62,9 @@ app.use("/api/recruiterupdate", recruiterUpdate);
 app.use("/api/job_track", jobTrack);
 app.use("/api/admin/", adminUserRoutes);
 app.use("/api/admin/", adminRecruiterRoutes);
-app.use("/api/admin/approval", adminApproval);
+// app.use("/api/admin/approval", adminApproval);
 
-// Start Server
+// Start Servera
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);

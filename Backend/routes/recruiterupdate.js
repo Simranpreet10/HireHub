@@ -1,6 +1,7 @@
 const express=require("express");
 const Router = express.Router();
-const {updaterecruiterProfile } = require("../controllers/updaterecuiter.js");
+const { updaterecruiterProfile, getRecruiterProfile } = require("../controllers/updaterecuiter.js");
 // Router.get("/getdata", getdata);
-Router.put("/:recruiter_id",updaterecruiterProfile);
+Router.get("/:recruiter_id", getRecruiterProfile);
+Router.put("/:recruiter_id", updaterecruiterProfile);
 module.exports = Router;

@@ -1,3 +1,4 @@
+// src/components/services/AdminApi.js
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:4245";
@@ -8,14 +9,13 @@ const raw = axios.create({
   timeout: 15000,
 });
 
-// Attach token
+// Attach token (admin)
 raw.interceptors.request.use((config) => {
   const token = localStorage.getItem("adminToken");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Handle errors
 raw.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -36,25 +36,28 @@ const adminApi = {
 
   /** ---------- USER MANAGEMENT ---------- **/
   getAllUsers: () => raw.get("/api/admin/users"),
-  getUserProfile: (id) => raw.get(`/api/admin/users/${id}/profile`),  // ✅ changed name here
+  getUserProfile: (id) => raw.get(`/api/admin/users/${id}/profile`),
+
+  // === FIXED: use PUT and correct path ===
   toggleUserStatus: (userId) =>
     raw.put(`/api/admin/users/${userId}/toggle-status`),
+
+  // === FIXED: include '/delete' suffix to match backend ===
   deleteUser: (userId) => raw.delete(`/api/admin/users/${userId}/delete`),
 
   /** ---------- RECRUITER MANAGEMENT ---------- **/
   getAllRecruiters: () => raw.get("/api/admin/recruiters"),
-  toggleRecruiterStatus: (id, body) =>
-    raw.put(`/api/admin/recruiter/${id}/status`, body),
-  deleteRecruiter: (id) => raw.delete(`/api/admin/recruiter/${id}`),
+  getRecruiterProfile: (id) => raw.get(`/api/admin/recruiters/${id}/profile`),
+  toggleRecruiterStatus: (id) =>
+    raw.put(`/api/admin/recruiters/${id}/toggle-status`),
+  deleteRecruiter: (id) => raw.delete(`/api/admin/recruiters/${id}`),
 
   /** ---------- COMPANY MANAGEMENT ---------- **/
   getAllCompanies: () => raw.get("/api/admin/companies"),
 
   /** ---------- JOB MANAGEMENT ---------- **/
-  getAllJobs: () => raw.get("/api/viewjob"),
-  getJobById: (id) => raw.get(`/api/viewjob/${id}`),
-  updateJob: (id, body) => raw.put(`/api/viewjob/${id}`, body),
-  deleteJob: (id) => raw.delete(`/api/viewjob/${id}`),
+  getAllJobs: () => raw.get("/api/admin/jobs"),
+  deleteJob: (id) => raw.delete(`/api/admin/jobs/${id}`),
 };
 
 export default adminApi;
