@@ -255,13 +255,6 @@ const getAllApplications = async (req, res) => {
   }
 };
 
-module.exports = {
-  applyForJob,
-  getUserApplications,
-  updateApplicationStatus,
-  getAllApplications, 
-};
-
 async function withdrawApplication(req, res) {
     try {
         const { applicationId } = req.params;
@@ -320,5 +313,11 @@ async function withdrawApplication(req, res) {
     }
 }
 
-module.exports={applyForJob, getUserApplications, updateApplicationStatus, withdrawApplication};
+module.exports = {
+  applyForJob,
+  getUserApplications,
+  updateApplicationStatus,
+  getAllApplications,
+  withdrawApplication
+};
 
