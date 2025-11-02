@@ -7,6 +7,9 @@ export default function JobDetail() {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [applicationId, setApplicationId] = useState(null);
   const nav = useNavigate();
 
   useEffect(() => {
@@ -21,6 +24,33 @@ export default function JobDetail() {
       }
     }
     if (id) fetchJob();
+  }, [id]);
+
+  // Check if user has already applied for this job
+  useEffect(() => {
+    async function checkApplicationStatus() {
+      const token = localStorage.getItem("token");
+      const userData = JSON.parse(localStorage.getItem("userData"));
+      
+      if (!token || !userData) return;
+
+      try {
+        // Fetch user's applications
+        const res = await API.raw.get(`/api/applications/user/${userData.user_id}`);
+        const applications = res.data || [];
+        
+        // Check if user has applied for this job
+        const application = applications.find(app => app.job_id === parseInt(id));
+        if (application) {
+          setHasApplied(true);
+          setApplicationId(application.application_id);
+        }
+      } catch (error) {
+        console.error("Error checking application status:", error);
+      }
+    }
+    
+    if (id) checkApplicationStatus();
   }, [id]);
 
   const handleApply = async () => {
@@ -41,19 +71,83 @@ export default function JobDetail() {
 
     try {
       setApplying(true);
-      await API.raw.post("/api/applications/apply", {
+      const response = await API.raw.post("/api/applications/apply", {
         userId: userData.user_id,
         jobId: parseInt(id),
         resume: null,
       });
       
-      alert("Application submitted successfully!");
-      nav("/applications");
+      console.log('Apply response:', response.data);
+      
+      // Update state to show withdraw button
+      setHasApplied(true);
+      if (response.data && response.data.application) {
+        setApplicationId(response.data.application.application_id);
+        console.log('Application ID set:', response.data.application.application_id);
+      } else {
+        console.warn('Application object not returned, will need to refresh for withdraw');
+        // Re-fetch application status to get the application_id
+        setTimeout(async () => {
+          try {
+            const userData = JSON.parse(localStorage.getItem("userData"));
+            const res = await API.raw.get(`/api/applications/user/${userData.user_id}`);
+            const applications = res.data || [];
+            const application = applications.find(app => app.job_id === parseInt(id));
+            if (application) {
+              setApplicationId(application.application_id);
+              console.log('Application ID fetched:', application.application_id);
+            }
+          } catch (err) {
+            console.error('Error fetching application ID:', err);
+          }
+        }, 1000);
+      }
+      
+      alert("✅ Application submitted successfully!");
     } catch (error) {
       console.error("Error applying for job:", error);
       alert(error.response?.data?.error || "Failed to apply for job");
     } finally {
       setApplying(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!window.confirm("Are you sure you want to withdraw your application?")) {
+      return;
+    }
+
+    if (!applicationId) {
+      alert("❌ Application ID not found. Please refresh the page and try again.");
+      return;
+    }
+
+    try {
+      setWithdrawing(true);
+      
+      console.log('Withdrawing application:', applicationId);
+      
+      // Delete the application
+      const response = await API.raw.delete(`/api/applications/${applicationId}`);
+      console.log('Withdraw response:', response.data);
+      
+      // Update state to show apply button again
+      setHasApplied(false);
+      setApplicationId(null);
+      
+      alert("✅ Application withdrawn successfully!");
+    } catch (error) {
+      console.error("Error withdrawing application:", error);
+      console.error("Error details:", error.response?.data);
+      console.error("Status code:", error.response?.status);
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message ||
+                          "Failed to withdraw application. Please try again.";
+      alert("❌ " + errorMessage);
+    } finally {
+      setWithdrawing(false);
     }
   };
 
@@ -208,21 +302,82 @@ export default function JobDetail() {
               )}
             </div>
 
-            {/* Apply Button */}
-            <div className="mt-8 flex gap-4">
-              <button
-                onClick={handleApply}
-                disabled={applying}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 px-8 rounded-lg text-lg font-semibold transition disabled:bg-blue-400 disabled:cursor-not-allowed"
-              >
-                {applying ? "Applying..." : "Apply Now"}
-              </button>
-              <button
-                onClick={() => nav("/jobs")}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-4 px-8 rounded-lg text-lg font-semibold transition"
-              >
-                Back to Jobs
-              </button>
+            {/* Apply/Withdraw Button */}
+            <div className="mt-8">
+              {hasApplied ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+                    <svg className="w-6 h-6 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-green-800 font-semibold">Application Submitted</p>
+                      <p className="text-green-600 text-sm">You have already applied for this position</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleWithdraw}
+                      disabled={withdrawing}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-4 px-8 rounded-lg text-lg font-semibold transition disabled:bg-red-400 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {withdrawing ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Withdrawing...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Withdraw Application
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => nav("/applications")}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-800 py-4 px-8 rounded-lg text-lg font-semibold transition"
+                    >
+                      View My Applications
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleApply}
+                    disabled={applying}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 px-8 rounded-lg text-lg font-semibold transition disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {applying ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Applying...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Apply Now
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => nav("/jobs")}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-4 px-8 rounded-lg text-lg font-semibold transition"
+                  >
+                    Back to Jobs
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

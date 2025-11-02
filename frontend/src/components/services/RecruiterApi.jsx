@@ -17,27 +17,30 @@ recruiterInstance.interceptors.request.use((config) => {
 
 export const recruiterApi = {
   // ✅ Recruiter Authentication
-  register: (payload) => recruiterInstance.post("/api/recruiter/register", payload),
-  verifyOtp: (payload) => recruiterInstance.post("/api/recruiter/verify", payload),
-  login: (payload) => recruiterInstance.post("/api/recruiter/login", payload),
+  register: (payload) => recruiterInstance.post("/api/recruiterauth/register", payload),
+  login: (payload) => recruiterInstance.post("/api/recruiterauth/login", payload),
 
   // ✅ Recruiter Profile
-  getProfile: () => recruiterInstance.get("/api/recruiter/profile"),
-  updateProfile: (payload) => recruiterInstance.put("/api/recruiter/profile", payload),
+  getProfile: (recruiter_id) => recruiterInstance.get(`/api/recruiterupdate/${recruiter_id}`),
+  updateProfile: (recruiter_id, payload) => recruiterInstance.put(`/api/recruiterupdate/${recruiter_id}`, payload),
 
   // ✅ Company Info
-  getCompany: () => recruiterInstance.get("/api/company/profile"),
-  updateCompany: (formData) => {
-    const config = { headers: { "Content-Type": "multipart/form-data" } };
-    return recruiterInstance.put("/api/company/update", formData, config);
-  },
+  getCompany: (company_id) => recruiterInstance.get(`/api/updatecompany/company/${company_id}`),
+  createCompany: (payload) => recruiterInstance.post("/api/updatecompany/company", payload),
+  updateCompany: (company_id, payload) => recruiterInstance.put(`/api/updatecompany/company/${company_id}`, payload),
 
   // ✅ Jobs CRUD
-  getJobs: () => recruiterInstance.get("/api/recruiter/jobs"),
-  getJob: (id) => recruiterInstance.get(`/api/recruiter/jobs/${id}`),
-  createJob: (data) => recruiterInstance.post("/api/recruiter/jobs", data),
-  updateJob: (id, data) => recruiterInstance.put(`/api/recruiter/jobs/${id}`, data),
-  deleteJob: (id) => recruiterInstance.delete(`/api/recruiter/jobs/${id}`),
+  getJobs: (recruiter_id) => recruiterInstance.get(`/api/getRecruiterJobs/recruiter/${recruiter_id}/jobs`),
+  createJob: (recruiter_id, data) => recruiterInstance.post(`/api/job/recruiter/${recruiter_id}/job`, data),
+  postJob: (recruiter_id, data) => recruiterInstance.post(`/api/job/recruiter/${recruiter_id}/job`, data), // Alias for createJob
+  updateJob: (recruiter_id, job_id, data) => recruiterInstance.put(`/api/job/recruiter/${recruiter_id}/job/${job_id}`, data),
+  deleteJob: (recruiter_id, job_id) => recruiterInstance.delete(`/api/job/recruiter/${recruiter_id}/job/${job_id}`),
+
+  // ✅ Applicant Tracking
+  getAllJobsWithApplicants: () => recruiterInstance.get("/api/job_track/jobs"),
+  getJobApplicants: (jobId) => recruiterInstance.get(`/api/job_track/job/${jobId}`),
+  getApplicationDetail: (applicationId) => recruiterInstance.get(`/api/job_track/application/${applicationId}`),
+  updateApplicationStatus: (applicationId, newStatus) => recruiterInstance.put(`/api/applications/${applicationId}/status`, { newStatus }),
 };
 
 export default recruiterApi;

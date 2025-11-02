@@ -135,11 +135,11 @@ export default function JobSearch() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Job Types</option>
-              <option value="Full-time">Full-time</option>
-              <option value="Part-time">Part-time</option>
-              <option value="Internship">Internship</option>
+              <option value="Full Time">Full Time</option>
+              <option value="Part Time">Part Time</option>
               <option value="Contract">Contract</option>
-              <option value="Remote">Remote</option>
+              <option value="Internship">Internship</option>
+              <option value="Freelance">Freelance</option>
             </select>
 
             <input
